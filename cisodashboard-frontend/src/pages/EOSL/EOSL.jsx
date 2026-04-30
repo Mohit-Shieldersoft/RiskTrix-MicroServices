@@ -14,14 +14,16 @@ import {
   Alert,
   CircularProgress,
 } from "@mui/material";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
+// import UploadFileIcon from "@mui/icons-material/UploadFile"; // TODO: re-enable when CSV upload is ready
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import EOSLTable from "./components/EOSLTable";
 import CountCard from "./components/CountCard";
 import NonComplianceBarChart from "./components/NonComplianceBarChart";
 import ComplianceLineChart from "./components/ComplianceLineChart";
-import AssetUploadModal from "./components/AssetUploadModal";
+// import AssetUploadModal from "./components/AssetUploadModal"; // TODO: re-enable when CSV upload is ready
 import AddAssetModal from "./components/AddAssetModal";
+import Toast from "../../components/common/Toast";
+import { useToast } from "../../components/common/useToast";
 import { getEOSLDashboardData } from "../../utils/eoslApi";
 import dashboardTheme from "../../theme/dashboardTheme";
 import "./EOSL.css";
@@ -30,9 +32,10 @@ const EOSL = () => {
   const [loading, setLoading] = useState(true);
   const [eoslData, setEOSLData] = useState(null);
   const [selectedYear, setSelectedYear] = useState("2025");
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  // const [isUploadModalOpen, setIsUploadModalOpen] = useState(false); // TODO: re-enable when CSV upload is ready
   const [isAddAssetModalOpen, setIsAddAssetModalOpen] = useState(false);
   const [error, setError] = useState(null);
+  const { toast, showToast, closeToast } = useToast();
 
   const currentDateTime = new Date().toLocaleString("en-US", {
     year: "numeric",
@@ -70,17 +73,18 @@ const EOSL = () => {
     setSelectedYear(event.target.value);
   };
 
-  const handleAssetUpload = (assetData) => {
-    console.log("Uploading asset:", assetData);
-    setIsUploadModalOpen(false);
-    // Refresh data after upload
-    fetchData();
-  };
+  // TODO: re-enable when CSV upload is ready
+  // const handleAssetUpload = (result) => {
+  //   setIsUploadModalOpen(false);
+  //   if (result?.created > 0) {
+  //     showToast(`${result.created} asset${result.created !== 1 ? "s" : ""} uploaded successfully`, "success");
+  //     fetchData();
+  //   }
+  // };
 
-  const handleAddAsset = (assetData) => {
-    console.log("Adding new asset:", assetData);
+  const handleAddAsset = (_createdAsset) => {
     setIsAddAssetModalOpen(false);
-    // Refresh data after adding asset
+    showToast("Asset added successfully", "success");
     fetchData();
   };
 
@@ -407,7 +411,24 @@ const EOSL = () => {
             minWidth: 0,
           }}
         >
-          <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+          <Box
+            sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mb: 2 }}
+          >
+            {/* TODO: re-enable when CSV upload is ready
+            <Button
+              variant="outlined"
+              startIcon={<UploadFileIcon />}
+              onClick={() => setIsUploadModalOpen(true)}
+              sx={{
+                color: "#1976D2",
+                borderColor: "#1976D2",
+                fontWeight: "medium",
+                "&:hover": { bgcolor: "rgba(25,118,210,0.06)" },
+              }}
+            >
+              Upload CSV
+            </Button>
+            */}
             <Button
               variant="contained"
               startIcon={<AddCircleOutlineIcon />}
@@ -457,17 +478,21 @@ const EOSL = () => {
       </Grid>
 
       {/* Modals */}
+      {/* TODO: re-enable when CSV upload is ready
       <AssetUploadModal
         open={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onUpload={handleAssetUpload}
       />
+      */}
 
       <AddAssetModal
         open={isAddAssetModalOpen}
         onClose={() => setIsAddAssetModalOpen(false)}
         onAddAsset={handleAddAsset}
       />
+
+      <Toast toast={toast} onClose={closeToast} />
     </Box>
   );
 };

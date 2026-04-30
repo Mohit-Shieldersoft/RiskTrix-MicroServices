@@ -1,0 +1,73 @@
+@keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Custom styling for the date picker */
+  .date-picker .MuiInputBase-input {
+    padding: 8px 14px;
+  }
+  
+  /* Enhanced table row effect */
+  .vulnerability-row {
+    transition: all 0.2s ease;
+  }
+  
+  .vulnerability-row:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+  
+  /* Status indicator styling */
+  .status-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+  
+  .status-open {
+    background-color: #f44336;
+  }
+  
+  .status-closed {
+    background-color: #4caf50;
+  }
+  
+  /* Critical vulnerability highlight */
+  .critical-vulnerability {
+    position: relative;
+  }
+  
+  .critical-vulnerability:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background-color: #f44336;
+  }
+  
+  /* Button effects */
+  .action-button {
+    transition: all 0.2s ease;
+  }
+  
+  .action-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 600px) {
+    .action-button {
+      width: 100%;
+    }
+  }

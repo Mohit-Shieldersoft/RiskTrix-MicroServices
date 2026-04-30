@@ -1,0 +1,47 @@
+/* :root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+html, body {
+  -webkit-font-smoothing: antialiased;    
+  -moz-osx-font-smoothing: grayscale;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;    
+} */
+
+
+/* RESET → Make Chrome behave same as Safari */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+html, body {
+  -webkit-font-smoothing: antialiased;   /* Make Chrome text look like Safari */
+  -moz-osx-font-smoothing: grayscale;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;   /* MATCH Safari spacing */
+}

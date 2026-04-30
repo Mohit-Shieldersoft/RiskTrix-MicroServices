@@ -1,0 +1,170 @@
+/* Animation for page entry */
+@keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Pulse animation for status indicators */
+  @keyframes pulse {
+    0% {
+      opacity: 0.5;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.2);
+    }
+    100% {
+      opacity: 0.5;
+      transform: scale(1);
+    }
+  }
+  
+  /* Button hover effect */
+  @keyframes shimmer {
+    0% {
+      background-position: -100% 0;
+    }
+    100% {
+      background-position: 100% 0;
+    }
+  }
+  
+  /* Futuristic card styles */
+  .futuristic-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f5f7fc 100%);
+    border-radius: 16px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    overflow: hidden;
+    position: relative;
+    height: 100%;
+  }
+  
+  .futuristic-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgba(103, 58, 183, 0.5);
+    border-radius: 8px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(103, 58, 183, 0.7);
+  }
+  
+  /* Dashboard header */
+  .dashboard-header {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .dashboard-header::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0) 70%
+    );
+    animation: rotate 20s linear infinite;
+    pointer-events: none;
+  }
+  
+  @keyframes rotate {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* Fade in animations for sections */
+  .section-fade-in {
+    opacity: 0;
+    animation: fadeIn 0.8s ease-out forwards;
+  }
+  
+  /* Staggered fade-in animations */
+  .fade-in-1 { animation-delay: 0s; }
+  .fade-in-2 { animation-delay: 0.2s; }
+  .fade-in-3 { animation-delay: 0.4s; }
+  
+  /* Effect for selected rows */
+  .row-selected {
+    background-color: rgba(103, 58, 183, 0.1) !important;
+    border-left: 3px solid #673AB7 !important;
+  }
+  
+  /* Table hover effect */
+  .table-row-hover {
+    transition: all 0.2s ease;
+  }
+  
+  .table-row-hover:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Empty state styling */
+  .empty-state {
+    border: 2px dashed rgba(103, 58, 183, 0.2);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: rgba(0, 0, 0, 0.5);
+  }
+  
+  /* Tooltip custom styling */
+  .custom-tooltip {
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 12px 16px;
+    border: 1px solid #eeeeee;
+    font-size: 0.875rem;
+  }
+  
+  /* Button glow effect on hover */
+  .glow-on-hover:hover {
+    box-shadow: 0 0 15px rgba(103, 58, 183, 0.5);
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 960px) {
+    .dashboard-header {
+      padding: 16px;
+    }
+    
+    .dashboard-header h1 {
+      font-size: 1.5rem;
+    }
+  }

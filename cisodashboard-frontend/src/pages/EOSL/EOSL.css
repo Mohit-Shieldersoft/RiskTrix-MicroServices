@@ -1,0 +1,147 @@
+/* Animation for page entry */
+@keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Pulse animation for elements */
+  @keyframes pulse {
+    0% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+    100% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+  }
+  
+  /* Shimmer effect for cards */
+  @keyframes shimmer {
+    0% {
+      background-position: -100% 0;
+    }
+    100% {
+      background-position: 100% 0;
+    }
+  }
+  
+  /* Dashboard header with animation */
+  .dashboard-header {
+    position: relative;
+    overflow: hidden;
+    animation: fadeIn 0.5s ease-out;
+  }
+  
+  .dashboard-header::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0) 70%
+    );
+    animation: rotate 20s linear infinite;
+    pointer-events: none;
+  }
+  
+  @keyframes rotate {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* Futuristic card styles */
+  .futuristic-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f5f7fc 100%);
+    border-radius: 16px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .futuristic-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Count card animations */
+  .count-card {
+    animation: fadeIn 0.5s ease-out;
+  }
+  
+  .count-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.15) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    background-size: 200% 100%;
+    pointer-events: none;
+  }
+  
+  .count-card:hover::after {
+    opacity: 1;
+    animation: shimmer 2s infinite;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgba(25, 118, 210, 0.5);
+    border-radius: 8px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(25, 118, 210, 0.7);
+  }
+  
+  /* Fix for line charts */
+  .recharts-wrapper {
+    min-height: 200px;
+  }
+  
+  .recharts-legend-wrapper {
+    font-size: 11px !important;
+  }
+  
+  .recharts-legend-item {
+    margin-right: 10px !important;
+  }

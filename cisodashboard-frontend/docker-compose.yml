@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  vulnerability-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vulnerability-monitor
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    environment:
+      - NODE_ENV=production
+      # Assuming your frontend code connects to the backend through a variable:
+      - VITE_API_URL=/api

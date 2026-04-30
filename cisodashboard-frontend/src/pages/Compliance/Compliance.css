@@ -1,0 +1,165 @@
+/* Animation for page entry */
+@keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Pulse animation for elements */
+  @keyframes pulse {
+    0% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+    100% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+  }
+  
+  /* Futuristic card styles */
+  .futuristic-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f5f7fc 100%);
+    border-radius: 16px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .futuristic-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Dashboard header with animation */
+  .dashboard-header {
+    position: relative;
+    overflow: hidden;
+    animation: fadeIn 0.5s ease-out;
+  }
+  
+  .dashboard-header::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0) 70%
+    );
+    animation: rotate 20s linear infinite;
+    pointer-events: none;
+  }
+  
+  @keyframes rotate {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* Vendor selection animation */
+  .vendor-selection {
+    animation: fadeIn 0.5s ease-out;
+  }
+  
+  /* Custom scrollbar */
+  .vendor-list::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .vendor-list::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+  }
+  
+  .vendor-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 121, 107, 0.5);
+    border-radius: 8px;
+  }
+  
+  .vendor-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 121, 107, 0.7);
+  }
+  
+  /* Pulse animation for empty state */
+  .pulse-animation {
+    animation: pulse 3s infinite;
+  }
+  
+  /* Fade-in animations for sections */
+  .section-fade-in-1 {
+    animation: fadeIn 0.4s ease-out;
+  }
+  
+  .section-fade-in-2 {
+    animation: fadeIn 0.6s ease-out;
+  }
+  
+  .section-fade-in-3 {
+    animation: fadeIn 0.8s ease-out;
+  }
+  
+  /* Animation for checkbox state change */
+  @keyframes checkmarkAnimation {
+    0% {
+      transform: scale(0);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  .compliant-checkbox-checked {
+    animation: checkmarkAnimation 0.3s forwards;
+  }
+  
+  /* Button glow effect */
+  @keyframes buttonGlow {
+    0% {
+      box-shadow: 0 0 5px rgba(0, 121, 107, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 15px rgba(0, 121, 107, 0.6);
+    }
+    100% {
+      box-shadow: 0 0 5px rgba(0, 121, 107, 0.3);
+    }
+  }
+  
+  .save-button-glow {
+    animation: buttonGlow 2s infinite;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 960px) {
+    .dashboard-header {
+      padding: 16px;
+    }
+    
+    .dashboard-header h1 {
+      font-size: 1.5rem;
+    }
+  }

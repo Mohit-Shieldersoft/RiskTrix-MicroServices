@@ -1,0 +1,1 @@
+"""Shared domain CRUD package."""

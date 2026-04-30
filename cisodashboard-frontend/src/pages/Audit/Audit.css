@@ -1,0 +1,358 @@
+/* Animation for page entry */
+@keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Glow effects for cards */
+  @keyframes glow {
+    0% {
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    }
+    50% {
+      box-shadow: 0 8px 25px rgba(63, 81, 181, 0.15);
+    }
+    100% {
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    }
+  }
+  
+  /* Pulse animation for alerts */
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  
+  /* Shimmer effect for charts */
+  @keyframes shimmer {
+    0% {
+      background-position: -100% 0;
+    }
+    100% {
+      background-position: 100% 0;
+    }
+  }
+  
+  /* Futuristic card styles */
+  .futuristic-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f5f7fc 100%);
+    border-radius: 16px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .futuristic-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+  }
+  
+  .futuristic-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3f51b5, #f50057);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease-out;
+  }
+  
+  .futuristic-card:hover::before {
+    transform: scaleX(1);
+  }
+  
+  /* Glowing highlight for important elements */
+  .glow-effect {
+    animation: glow 3s infinite;
+  }
+  
+  /* Card indicators */
+  .card-indicator {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+  }
+  
+  .indicator-success {
+    background-color: #4CAF50;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+  }
+  
+  .indicator-warning {
+    background-color: #FF9800;
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+  }
+  
+  .indicator-danger {
+    background-color: #FF5252;
+    box-shadow: 0 0 10px rgba(255, 82, 82, 0.5);
+    animation: pulse 2s infinite;
+  }
+  
+  /* Chart container styling */
+  .chart-container {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .chart-container:hover {
+    transform: translateY(-3px);
+  }
+  
+  /* Shimmer effect on chart hover */
+  .chart-shimmer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.15) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    background-size: 200% 100%;
+    pointer-events: none;
+  }
+  
+  .chart-container:hover .chart-shimmer {
+    opacity: 1;
+    animation: shimmer 2s infinite;
+  }
+  
+  /* Search field styling */
+  .search-field {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+  }
+  
+  .search-field:focus-within {
+    box-shadow: 0 0 15px rgba(63, 81, 181, 0.2);
+    transform: translateY(-2px);
+  }
+  
+  /* Modern buttons */
+  .modern-button {
+    border-radius: 8px;
+    text-transform: none;
+    padding: 8px 16px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+  }
+  
+  .modern-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Modal styling */
+  .modern-modal {
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  
+  .modal-header {
+    background: linear-gradient(135deg, #f5f7fc 0%, #ffffff 100%);
+    padding: 16px 24px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  }
+  
+  .modal-content {
+    padding: 24px;
+  }
+  
+  .modal-footer {
+    background: #f9fafc;
+    padding: 16px 24px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Tooltip styling */
+  .recharts-tooltip-wrapper .recharts-default-tooltip {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
+    padding: 12px !important;
+  }
+  
+  /* Dashboard header glow effect */
+  .dashboard-header {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .dashboard-header::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0) 70%
+    );
+    animation: rotate 20s linear infinite;
+    pointer-events: none;
+  }
+  
+  @keyframes rotate {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* Card accent borders */
+  .accent-top-border {
+    position: relative;
+  }
+  
+  .accent-top-border::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent-color, #3f51b5), transparent);
+  }
+  
+  /* Pie chart center glow */
+  .pie-chart-center-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      rgba(63, 81, 181, 0.1) 0%,
+      rgba(255, 255, 255, 0) 70%
+    );
+    pointer-events: none;
+  }
+  
+  /* Futuristic scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgba(63, 81, 181, 0.5);
+    border-radius: 8px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(63, 81, 181, 0.7);
+  }
+  
+  /* Badge animations */
+  .animated-badge {
+    transition: all 0.3s ease;
+  }
+  
+  .animated-badge:hover {
+    transform: scale(1.1);
+  }
+  
+  /* Non-compliant warning pulse */
+  .non-compliant-pulse {
+    animation: warning-pulse 2s infinite;
+  }
+  
+  @keyframes warning-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.4);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(255, 82, 82, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(255, 82, 82, 0);
+    }
+  }
+  
+  /* Add subtle pattern background */
+  .pattern-bg {
+    background-color: #f8f9fa;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  
+  /* Responsive card adjustments */
+  @media (max-width: 600px) {
+    .dashboard-header {
+      padding: 16px;
+    }
+    
+    .dashboard-header h1 {
+      font-size: 1.5rem;
+    }
+  }
+  
+  /* Futuristic button glow */
+  .glow-button {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .glow-button::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.3) 0%,
+      rgba(255, 255, 255, 0) 70%
+    );
+    transform: rotate(45deg);
+    transition: all 0.3s ease;
+    opacity: 0;
+  }
+  
+  .glow-button:hover::after {
+    opacity: 1;
+  }

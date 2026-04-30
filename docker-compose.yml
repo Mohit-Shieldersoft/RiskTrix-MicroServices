@@ -1,0 +1,185 @@
+# Micro-CISO Microservices Architecture
+# Phase 7: Docker Compose for Application and Audit Services
+version: "3.8"
+
+services:
+  # PostgreSQL Database (Shared during transition)
+  postgres:
+    image: postgres:15-alpine
+    container_name: micro-ciso-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: risktrix_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - micro-ciso-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d risktrix_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  # Redis for Event Bus and Caching
+  redis:
+    image: redis:7-alpine
+    container_name: micro-ciso-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - micro-ciso-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  # Application Service (Phase 5)
+  application-service:
+    build:
+      context: ./application-service
+      dockerfile: Dockerfile
+    container_name: application-service
+    restart: unless-stopped
+    environment:
+      # Service Config
+      PORT: 8001
+      ENVIRONMENT: development
+
+      # Database
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: risktrix_db
+      DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/risktrix_db
+
+      # Redis
+      REDIS_URL: redis://redis:6379
+
+      # Security
+      SECRET_KEY: your-super-secret-key-change-in-production
+
+      # Logging
+      LOG_LEVEL: INFO
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./application-service/uploads:/app/uploads
+      - ./application-service/logs:/app/logs
+    networks:
+      - micro-ciso-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Audit Service (Phase 6)
+  audit-service:
+    build:
+      context: ./audit-service
+      dockerfile: Dockerfile
+    container_name: audit-service
+    restart: unless-stopped
+    environment:
+      # Service Config
+      PORT: 8002
+      ENVIRONMENT: development
+
+      # Database
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: risktrix_db
+      DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/risktrix_db
+
+      # Redis
+      REDIS_URL: redis://redis:6379
+
+      # Security
+      SECRET_KEY: your-super-secret-key-change-in-production
+
+      # Logging
+      LOG_LEVEL: INFO
+
+      # Email Configuration (for certificate expiry notifications)
+      MAIL_ENABLED: "false"
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./audit-service/uploads:/app/uploads
+      - ./audit-service/logs:/app/logs
+    networks:
+      - micro-ciso-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # API Gateway (Nginx) - Routes frontend requests to microservices
+  api-gateway:
+    image: nginx:alpine
+    container_name: micro-ciso-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./api-gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - micro-ciso-network
+    depends_on:
+      - application-service
+      - audit-service
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - gateway
+
+networks:
+  micro-ciso-network:
+    driver: bridge
+    name: micro-ciso-network
+
+volumes:
+  postgres_data:
+    name: micro-ciso-postgres-data
+  redis_data:
+    name: micro-ciso-redis-data

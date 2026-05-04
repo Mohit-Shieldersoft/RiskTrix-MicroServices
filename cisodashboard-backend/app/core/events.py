@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 logger = logging.getLogger(__name__)
 
 
-@dataclass
+@dataclass(kw_only=True)
 class DomainEvent(ABC):
     """Base class for all domain events.
     

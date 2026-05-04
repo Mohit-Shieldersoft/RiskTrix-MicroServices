@@ -1,1 +1,0 @@
-"""Application domain CRUD package."""

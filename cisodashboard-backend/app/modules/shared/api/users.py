@@ -6,7 +6,7 @@ from sqlalchemy import text
 from app.db.session import get_session
 from app.crud.crud_user import user_crud
 from app.schemas.user import UserCreate, UserResponse, UserUpdate
-from app.api.v1.endpoints.auth import admin_required
+from app.modules.shared.api.auth import admin_required
 from fastapi import Body
 from app.utils.logger import setup_logger
 

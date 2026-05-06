@@ -986,14 +986,13 @@ const YourBoard = () => {
             </Grid>
 
             {/* Right Side - General Updates - ~42% width (wider) */}
-            {/*
             <Grid
               size={{ xs: 12, lg: 5 }}
               sx={{ display: "flex", flexDirection: "column" }}
             >
               <GeneralUpdates />
             </Grid>
-              */}
+             
           </Grid>
         </motion.div>
       )}

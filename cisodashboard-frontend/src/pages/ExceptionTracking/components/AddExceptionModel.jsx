@@ -15,9 +15,11 @@ import {
   CircularProgress,
 } from "@mui/material";
 import exceptionApi from "../../../utils/exceptionApi";
+import { useActivity } from "../../../contexts/ActivityContext";
 
 const AddExceptionModel = ({ open, onClose, onSubmit }) => {
   const theme = useTheme();
+  const { addActivity } = useActivity();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
   const [formData, setFormData] = useState({
@@ -154,6 +156,19 @@ const AddExceptionModel = ({ open, onClose, onSubmit }) => {
         };
 
         const newException = await exceptionApi.createException(apiData);
+
+        // Emit activity event for GeneralUpdates
+        addActivity({
+          activity_type: "exception_created",
+          title: formData.exceptionName,
+          summary: "Security exception created",
+          description: `Severity: ${formData.severity} — ${formData.category}`,
+          priority:
+            formData.severity === "critical" || formData.severity === "high"
+              ? "high"
+              : "medium",
+          entity_name: formData.exceptionName,
+        });
 
         // Call parent component's onSubmit with the new exception
         if (onSubmit) {

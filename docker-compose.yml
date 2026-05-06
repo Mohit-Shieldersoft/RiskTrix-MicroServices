@@ -48,7 +48,7 @@ services:
   # Application Service (Phase 5)
   application-service:
     build:
-      context: ./application-service
+      context: ./backend/application-service
       dockerfile: Dockerfile
     container_name: application-service
     restart: unless-stopped
@@ -76,8 +76,8 @@ services:
     ports:
       - "8001:8001"
     volumes:
-      - ./application-service/uploads:/app/uploads
-      - ./application-service/logs:/app/logs
+      - ./backend/application-service/uploads:/app/uploads
+      - ./backend/application-service/logs:/app/logs
     networks:
       - micro-ciso-network
     depends_on:
@@ -95,7 +95,7 @@ services:
   # Audit Service (Phase 6)
   audit-service:
     build:
-      context: ./audit-service
+      context: ./backend/audit-service
       dockerfile: Dockerfile
     container_name: audit-service
     restart: unless-stopped
@@ -126,8 +126,8 @@ services:
     ports:
       - "8002:8002"
     volumes:
-      - ./audit-service/uploads:/app/uploads
-      - ./audit-service/logs:/app/logs
+      - ./backend/audit-service/uploads:/app/uploads
+      - ./backend/audit-service/logs:/app/logs
     networks:
       - micro-ciso-network
     depends_on:
@@ -142,6 +142,53 @@ services:
       retries: 3
       start_period: 40s
 
+  # Monolith Service (Auth, Users, Organizations)
+  cisodashboard-backend:
+    build:
+      context: ./backend/cisodashboard-backend
+      dockerfile: Dockerfile
+    container_name: cisodashboard-backend
+    restart: unless-stopped
+    environment:
+      # Service Config
+      PORT: 8000
+      ENVIRONMENT: development
+
+      # Database
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: risktrix_db
+      DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/risktrix_db
+
+      # Redis
+      REDIS_URL: redis://redis:6379
+
+      # Security
+      SECRET_KEY: your-super-secret-key-change-in-production
+
+      # Logging
+      LOG_LEVEL: INFO
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/cisodashboard-backend/uploads:/app/uploads
+      - ./backend/cisodashboard-backend/logs:/app/logs
+    networks:
+      - micro-ciso-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   # API Gateway (Nginx) - Routes frontend requests to microservices
   api-gateway:
     image: nginx:alpine
@@ -150,12 +197,13 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./api-gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./backend/api-gateway/nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
       - micro-ciso-network
     depends_on:
       - application-service
       - audit-service
+      - cisodashboard-backend
     healthcheck:
       test:
         [

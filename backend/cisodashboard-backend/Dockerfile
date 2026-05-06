@@ -14,6 +14,7 @@ RUN apt-get update \
         gcc \
         postgresql-client \
         netcat-traditional \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies

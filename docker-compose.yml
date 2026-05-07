@@ -85,6 +85,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      cisodashboard-backend:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 30s
@@ -134,6 +136,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      cisodashboard-backend:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
@@ -187,7 +191,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
 
   # API Gateway (Nginx) - Routes frontend requests to microservices
   api-gateway:

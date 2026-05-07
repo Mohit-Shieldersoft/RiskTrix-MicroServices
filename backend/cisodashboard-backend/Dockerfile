@@ -25,8 +25,10 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Copy project
 COPY . .
 
-# Create uploads directory
-RUN mkdir -p uploads
+# Create uploads directory, fix line endings, and make entrypoint executable
+RUN mkdir -p uploads \
+    && sed -i 's/\r$//' entrypoint.sh \
+    && chmod +x entrypoint.sh
 
 # Create non-root user
 RUN adduser --disabled-password --gecos '' appuser \
@@ -40,5 +42,5 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE 8000
 
-# Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run migrations then start the application
+ENTRYPOINT ["./entrypoint.sh"]

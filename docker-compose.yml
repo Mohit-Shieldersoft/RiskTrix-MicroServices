@@ -14,7 +14,7 @@ services:
       POSTGRES_PASSWORD: password
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - micro-ciso-postgres-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:
@@ -33,7 +33,7 @@ services:
     restart: unless-stopped
     command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
     volumes:
-      - redis_data:/data
+      - micro-ciso-redis-data:/data
     ports:
       - "6379:6379"
     networks:
@@ -231,7 +231,5 @@ networks:
     name: micro-ciso-network
 
 volumes:
-  postgres_data:
-    name: micro-ciso-postgres-data
-  redis_data:
-    name: micro-ciso-redis-data
+  micro-ciso-postgres-data:
+  micro-ciso-redis-data:

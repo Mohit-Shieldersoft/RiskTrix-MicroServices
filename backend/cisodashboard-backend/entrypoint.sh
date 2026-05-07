@@ -10,15 +10,18 @@ echo "✅ PostgreSQL is ready."
 
 echo "⏳ Checking migration state..."
 
-# Check if alembic_version table already tracks a revision (hex hash in output)
-CURRENT=$(python -m alembic current 2>&1)
+# On a fresh DB (no alembic_version table), alembic current exits non-zero.
+# Use || true so set -e does not abort the script.
+CURRENT=$(python -m alembic current 2>&1) || true
+echo "   alembic current: ${CURRENT:-<empty>}"
 
 if echo "$CURRENT" | grep -qE "[a-f0-9]{8,}"; then
-  echo "   Migration history found: $(echo "$CURRENT" | grep -oE '[a-f0-9]{8,}' | head -1)"
+  echo "   Revision tracked — no stamp needed."
 else
-  # No revision tracked yet. Check if app tables already exist (e.g. from a prior run).
+  # No revision tracked. Check whether app tables already exist
+  # (DB was pre-populated by create_all or a prior partial run).
   TABLE_EXISTS=$(python -c "
-import psycopg2, os, sys
+import psycopg2, os
 try:
     conn = psycopg2.connect(
         host=os.environ.get('POSTGRES_SERVER','postgres'),
@@ -32,9 +35,10 @@ try:
     conn.close()
 except Exception as e:
     print('False')
-")
+") || true
+
   if [ "$TABLE_EXISTS" = "True" ]; then
-    echo "   Tables already exist but no migration record — stamping database at head..."
+    echo "   Tables exist but no migration record — stamping database at head..."
     python -m alembic stamp head
     echo "   ✅ Stamped at head."
   else

@@ -16,8 +16,8 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Add 'standard' value to the userrole enum
-    op.execute("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'standard' AFTER 'admin'")
+    # Add 'STANDARD' value to the userrole enum (uppercase to match existing values)
+    op.execute("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'STANDARD' AFTER 'ADMIN'")
 
 
 def downgrade() -> None:

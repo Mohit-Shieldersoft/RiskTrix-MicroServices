@@ -56,7 +56,7 @@ const ApplicationTypeChart = ({ data }) => {
 
   if (!hasData) {
     return (
-      <DashboardCard title="Vulnerabilities by Application Type">
+      <DashboardCard title="Open Vulnerabilities by Application Type">
         <div
           style={{
             display: "flex",
@@ -67,16 +67,11 @@ const ApplicationTypeChart = ({ data }) => {
             fontSize: "0.9rem",
           }}
         >
-          No vulnerability data available
+          No open vulnerability data available
         </div>
       </DashboardCard>
     );
   }
-
-  // Collect all unique application names across all types
-  const allAppNames = [
-    ...new Set(data.flatMap((d) => (d.data || []).map((a) => a.name))),
-  ];
 
   // Build one radar entry per app type: subject = type label, one key per app
   const typeLabels = {
@@ -89,14 +84,15 @@ const ApplicationTypeChart = ({ data }) => {
     third_party: "Third Party",
   };
 
-  // Radar data: one entry per app type, value = total vulns in that type
+  // Radar data: one entry per app type with vulnerabilities, value = total open vulns in that type
   const formattedData = data.map((d) => ({
     subject: typeLabels[d.type] || d.type,
     Count: (d.data || []).reduce((sum, a) => sum + (a.value || 0), 0),
   }));
+  //.filter((item) => item.Count > 0); // Only show types with vulnerabilities
 
   return (
-    <DashboardCard title="Vulnerabilities by Application Type">
+    <DashboardCard title="Open Vulnerabilities by Application Type">
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart
           data={formattedData}
@@ -109,7 +105,7 @@ const ApplicationTypeChart = ({ data }) => {
           />
           <PolarRadiusAxis angle={90} domain={[0, "auto"]} />
           <Radar
-            name="Vulnerabilities"
+            name="Open Vulnerabilities"
             dataKey="Count"
             stroke={dashboardTheme.colors.chart.internal}
             fill={dashboardTheme.colors.chart.internal}

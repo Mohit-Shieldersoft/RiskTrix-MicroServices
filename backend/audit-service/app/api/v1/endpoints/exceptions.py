@@ -77,7 +77,7 @@ async def get_exceptions(
     end_date_to: Optional[str] = Query(None, description="Filter end date to (YYYY-MM-DD)"),
     approval_status: Optional[str] = Query(None, description="Filter by approval status"),
     page: int = Query(1, ge=1, description="Page number"),
-    size: int = Query(20, ge=1, le=100, description="Page size"),
+    size: int = Query(20, ge=1, le=1000, description="Page size"),
     db: AsyncSession = Depends(get_session),
     current_user_id: Optional[int] = None  # TODO: Add authentication dependency
 ):

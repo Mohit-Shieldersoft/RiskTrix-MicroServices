@@ -135,7 +135,7 @@ class ExceptionFilters(BaseModel):
     end_date_to: Optional[date] = None
     approval_status: Optional[str] = Field(None, pattern="^(pending|approved|rejected)$")
     page: int = Field(1, ge=1, description="Page number")
-    size: int = Field(20, ge=1, le=100, description="Page size")
+    size: int = Field(20, ge=1, le=1000, description="Page size")
 
 
 # Exception Statistics Schema

@@ -49,8 +49,14 @@ const ExceptionTracking = () => {
       try {
         // Fetch exceptions and stats in parallel
         const [exceptionsResponse, statsResponse] = await Promise.all([
-          exceptionApi.getExceptions({ page: 1, size: 100 }),
-          exceptionApi.getExceptionStats().catch(() => null),
+          exceptionApi.getExceptions({ page: 1, size: 1000 }), // Increase to get more exceptions for accurate stats
+          exceptionApi.getExceptionStats().catch((error) => {
+            console.warn(
+              "Stats API failed, falling back to client calculation:",
+              error,
+            );
+            return null;
+          }),
         ]);
 
         // Transform exception list
@@ -83,12 +89,14 @@ const ExceptionTracking = () => {
 
         // Use API stats if available, otherwise calculate from data
         if (statsResponse) {
+          console.log("Using API stats:", statsResponse);
           setStatistics({
             total: statsResponse.total_exceptions ?? transformedData.length,
             active: statsResponse.active_exceptions ?? 0,
             expired: statsResponse.expired_exceptions ?? 0,
             pending: statsResponse.pending_exceptions ?? 0,
             expiringSoon: statsResponse.expiring_soon ?? 0,
+            // Calculate approval status from transformed data since API doesn't provide this
             approved: transformedData.filter(
               (e) => e.approvalStatus === "Approved",
             ).length,
@@ -98,12 +106,14 @@ const ExceptionTracking = () => {
             inProgress: transformedData.filter(
               (e) => e.approvalStatus === "In Progress",
             ).length,
+            // Use API severity counts
             critical: statsResponse.by_severity?.critical ?? 0,
             high: statsResponse.by_severity?.high ?? 0,
             medium: statsResponse.by_severity?.medium ?? 0,
             low: statsResponse.by_severity?.low ?? 0,
           });
         } else {
+          console.warn("Stats API failed, calculating from exception data");
           // Fallback: calculate from transformed data
           setStatistics({
             total: transformedData.length,

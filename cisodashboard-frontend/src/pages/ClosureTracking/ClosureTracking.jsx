@@ -230,21 +230,26 @@ const ClosureTracking = () => {
         severity: "success",
       });
 
-      // Update local state
+      // Update local state for both vulnerabilities and filteredVulnerabilities
+      const updateVuln = (vuln) => {
+        if (vuln.id === id) {
+          return {
+            ...vuln,
+            status: newStatus,
+            closureDate:
+              newStatus === "closed"
+                ? new Date().toISOString().split("T")[0]
+                : vuln.closureDate,
+          };
+        }
+        return vuln;
+      };
+
       setVulnerabilities((prevVulnerabilities) =>
-        prevVulnerabilities.map((vuln) => {
-          if (vuln.id === id) {
-            return {
-              ...vuln,
-              status: newStatus,
-              closureDate:
-                newStatus === "closed"
-                  ? new Date().toISOString().split("T")[0]
-                  : vuln.closureDate,
-            };
-          }
-          return vuln;
-        }),
+        prevVulnerabilities.map(updateVuln),
+      );
+      setFilteredVulnerabilities((prevFiltered) =>
+        prevFiltered.map(updateVuln),
       );
 
       // Reload statistics
@@ -269,14 +274,19 @@ const ClosureTracking = () => {
         severity: "success",
       });
 
-      // Update local state
+      // Update local state for both vulnerabilities and filteredVulnerabilities
+      const updateVuln = (vuln) => {
+        if (vuln.id === id) {
+          return { ...vuln, remarks };
+        }
+        return vuln;
+      };
+
       setVulnerabilities((prevVulnerabilities) =>
-        prevVulnerabilities.map((vuln) => {
-          if (vuln.id === id) {
-            return { ...vuln, remarks };
-          }
-          return vuln;
-        }),
+        prevVulnerabilities.map(updateVuln),
+      );
+      setFilteredVulnerabilities((prevFiltered) =>
+        prevFiltered.map(updateVuln),
       );
     } catch (err) {
       console.error("Error updating remarks:", err);

@@ -17,39 +17,30 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # PostgreSQL requires ALTER TYPE ADD VALUE to be in its own transaction
-    # and committed before the new values can be used.
-    # We use op.get_bind().execute() with autocommit mode for ALTER TYPE
-    
+    # PostgreSQL does not allow using a newly-added enum value in the same
+    # transaction that added it. We must commit the ALTER TYPE changes first,
+    # then run the data migration in a new transaction.
+
     connection = op.get_bind()
-    
-    # Step 1: Add new enum values (these need to be committed immediately)
-    # Use COMMIT and start new transaction for each ALTER TYPE
+
+    # Step 1: Commit the current Alembic transaction so the ALTER TYPE below
+    # is committed before we try to use the new values.
+    connection.execute(sa.text("COMMIT"))
+
+    # Step 2: Add new enum values (outside of transaction — autocommit mode)
     connection.execute(sa.text("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'INFOSEC_MANAGER'"))
     connection.execute(sa.text("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'EXTERNAL_AUDITOR'"))
     connection.execute(sa.text("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'INTERNAL_AUDITOR'"))
-    
-    # Force a commit by using op.execute which respects transaction boundaries
-    # The values are now available for use
-    
-    # Step 2: Update existing users with old roles to new roles
-    # STANDARD -> SECURITY_ANALYST (or VIEWER for basic users)
-    op.execute("UPDATE users SET role = 'SECURITY_ANALYST' WHERE role = 'STANDARD'")
-    
-    # COMPLIANCE_OFFICER -> INFOSEC_MANAGER
-    op.execute("UPDATE users SET role = 'INFOSEC_MANAGER' WHERE role = 'COMPLIANCE_OFFICER'")
-    
-    # AUDITOR -> INTERNAL_AUDITOR (you can change to EXTERNAL_AUDITOR if needed)
-    op.execute("UPDATE users SET role = 'INTERNAL_AUDITOR' WHERE role = 'AUDITOR'")
-    
-    # Step 3: Note - We cannot remove old enum values in PostgreSQL easily
-    # Old values (STANDARD, COMPLIANCE_OFFICER, AUDITOR) will remain in the enum
-    # but won't be used. To fully remove them, you'd need to recreate the enum,
-    # which requires dropping and recreating the table or using a complex workaround.
+
+    # Step 3: Begin a new transaction for the data migration
+    connection.execute(sa.text("BEGIN"))
+    connection.execute(sa.text("UPDATE users SET role = 'SECURITY_ANALYST' WHERE role::text = 'STANDARD'"))
+    connection.execute(sa.text("UPDATE users SET role = 'INFOSEC_MANAGER' WHERE role::text = 'COMPLIANCE_OFFICER'"))
+    connection.execute(sa.text("UPDATE users SET role = 'INTERNAL_AUDITOR' WHERE role::text = 'AUDITOR'"))
+    connection.execute(sa.text("COMMIT"))
 
 
 def downgrade() -> None:
-    # Revert role mappings
-    op.execute("UPDATE users SET role = 'STANDARD' WHERE role = 'SECURITY_ANALYST'")
-    op.execute("UPDATE users SET role = 'COMPLIANCE_OFFICER' WHERE role = 'INFOSEC_MANAGER'")
-    op.execute("UPDATE users SET role = 'AUDITOR' WHERE role IN ('INTERNAL_AUDITOR', 'EXTERNAL_AUDITOR')")
+    op.execute("UPDATE users SET role = 'STANDARD' WHERE role::text = 'SECURITY_ANALYST'")
+    op.execute("UPDATE users SET role = 'COMPLIANCE_OFFICER' WHERE role::text = 'INFOSEC_MANAGER'")
+    op.execute("UPDATE users SET role = 'AUDITOR' WHERE role::text IN ('INTERNAL_AUDITOR', 'EXTERNAL_AUDITOR')")

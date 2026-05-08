@@ -1,3 +1,4 @@
 *.env
+*.env.example
 *.md
 seed_data.sql

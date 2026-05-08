@@ -153,17 +153,9 @@ async def bulk_upload_applications(
             errors.append({"row": idx + 2, "name": name, "errors": [str(e)]})
 
     if new_apps:
-        try:
-            db.add_all(new_apps)
-            await db.commit()
-            logger.info(f"Bulk upload successful: {success} applications created")
-        except Exception as e:
-            await db.rollback()
-            logger.error(f"Database error during bulk insert: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to save applications to database"
-            )
+        db.add_all(new_apps)
+        # Don't commit here - let the session dependency handle it
+        logger.info(f"Bulk upload prepared: {success} applications to be saved")
 
     return {
         "total": total,

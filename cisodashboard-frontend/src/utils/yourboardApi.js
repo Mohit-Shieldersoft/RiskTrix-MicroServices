@@ -10,7 +10,7 @@ import api from "./api";
  * - App Track: total applications (application-service /api/v1/applications)
  * - Infra Track: open vulnerabilities (application-service /api/v1/vulnerabilities?status=open)
  * - Audit Track: non-compliant vendors (audit-service /api/v1/vendors/dashboard)
- * - Exceptions: active exceptions (audit-service /api/v1/exceptions/stats/overview)
+ * - Exceptions: total exceptions (audit-service /api/v1/exceptions/stats/overview)
  *
  * @returns {Promise<Object>} Dashboard metrics with trends
  */
@@ -50,16 +50,17 @@ export const fetchYourBoardMetrics = async () => {
         0;
     }
 
-    // Exceptions: active exception count
+    // Exceptions: total exception count (not just active)
     let exceptionsCount = 0;
     if (exceptionsRes.status === "fulfilled" && exceptionsRes.value?.data) {
       const stats = exceptionsRes.value.data;
       exceptionsCount =
+        stats.total_exceptions ??
+        stats.totalExceptions ??
+        stats.total ??
         stats.active_exceptions ??
         stats.activeExceptions ??
-        stats.total_active ??
         stats.active ??
-        stats.total ??
         0;
     }
 

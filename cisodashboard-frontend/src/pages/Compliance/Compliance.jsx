@@ -107,20 +107,15 @@ const Compliance = () => {
 
       if (!selectedStandard) return;
 
-      // Fetch vendors filtered by selected standard; fall back to all vendors
+      // Fetch vendors filtered by selected standard
       try {
         setLoading(true);
-        // Try standard-specific filter first; fall back to all vendors
-        let apiResponse = await vendorApi.getVendors({
+        const apiResponse = await vendorApi.getVendors({
           standard: selectedStandard,
           page: 1,
           size: 100,
         });
-        let apiVendorsList = apiResponse?.vendors || [];
-        if (apiVendorsList.length === 0) {
-          apiResponse = await vendorApi.getVendors({ page: 1, size: 100 });
-          apiVendorsList = apiResponse?.vendors || [];
-        }
+        const apiVendorsList = apiResponse?.vendors || [];
 
         const transformedVendors = apiVendorsList.map((vendor) => ({
           ...vendor,
@@ -135,6 +130,10 @@ const Compliance = () => {
         setApiVendors(transformedVendors);
       } catch (err) {
         console.warn("Failed to load vendors:", err);
+        // Set empty arrays on error
+        setVendorOptions([]);
+        setFilteredVendors([]);
+        setApiVendors([]);
       } finally {
         setLoading(false);
       }

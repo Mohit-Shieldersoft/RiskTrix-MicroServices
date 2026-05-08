@@ -8,6 +8,14 @@ import {
   InputAdornment,
   Chip,
   CircularProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Pagination,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
@@ -48,10 +56,17 @@ const ClosureTracking = () => {
   const [isAddAppModalOpen, setIsAddAppModalOpen] = useState(false);
   const [isAddVulnerabilityModalOpen, setIsAddVulnerabilityModalOpen] =
     useState(false);
+  const [applicationsRefreshTrigger, setApplicationsRefreshTrigger] =
+    useState(0);
   const [newlyAddedIds, setNewlyAddedIds] = useState(new Set());
   const [uploading, setUploading] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [applications, setApplications] = useState([]);
+  const [appPage, setAppPage] = useState(1);
+  const [appTotalPages, setAppTotalPages] = useState(1);
+  const [appLoading, setAppLoading] = useState(false);
+  const [newlyAddedAppIds, setNewlyAddedAppIds] = useState(new Set());
   const { toast, showToast, closeToast } = useToast();
   // alias so existing call sites don't need to change
   const setSnackbar = ({ open, message, severity }) => {
@@ -70,6 +85,7 @@ const ClosureTracking = () => {
   // Fetch vulnerabilities and statistics on mount
   useEffect(() => {
     loadVulnerabilities(1, "");
+    loadApplications(1, "");
     loadStatistics();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -92,7 +108,7 @@ const ClosureTracking = () => {
       }
       const response = await fetchVulnerabilities({
         page: pageNum,
-        size: 10,
+        size: 5,
         search: search || undefined,
       });
 
@@ -147,6 +163,43 @@ const ClosureTracking = () => {
     }
   };
 
+  // Load applications from API
+  const loadApplications = async (
+    pageNum = 1,
+    search = "",
+    trackNew = false,
+    silent = false,
+  ) => {
+    const prevIds = trackNew ? new Set(applications.map((a) => a.id)) : null;
+    try {
+      if (!silent) setAppLoading(true);
+      const response = await applicationApi.listApplications({
+        page: pageNum,
+        size: 5,
+        search: search || undefined,
+      });
+      setAppPage(pageNum);
+      setAppTotalPages(response.pages || 1);
+      setApplications(response.items || []);
+      if (prevIds) {
+        const newIds = new Set(
+          (response.items || [])
+            .filter((a) => !prevIds.has(a.id))
+            .map((a) => a.id),
+        );
+        if (newIds.size > 0) {
+          setNewlyAddedAppIds(newIds);
+          setTimeout(() => setNewlyAddedAppIds(new Set()), 4000);
+        }
+      }
+    } catch (err) {
+      console.error("Error loading applications:", err);
+      showToast("Failed to load applications", "error");
+    } finally {
+      if (!silent) setAppLoading(false);
+    }
+  };
+
   // Handle add vulnerability
   const handleAddVulnerability = async (newVulnerability) => {
     try {
@@ -167,8 +220,8 @@ const ClosureTracking = () => {
       });
       setIsAddVulnerabilityModalOpen(false);
 
-      // Reload data
-      await loadVulnerabilities(page, searchQuery);
+      // Reload data with green highlight on new row
+      await loadVulnerabilities(page, searchQuery, true, true);
       await loadStatistics();
     } catch (err) {
       console.error("Error creating vulnerability:", err);
@@ -209,9 +262,13 @@ const ClosureTracking = () => {
       });
       setIsAddAppModalOpen(false);
 
-      // Reload vulnerabilities to show any newly created vulnerabilities
+      // Reload vulnerabilities and applications
       await loadVulnerabilities(1, searchQuery);
+      await loadApplications(1, searchQuery, true, true);
       await loadStatistics();
+
+      // Trigger refresh of applications in modals
+      setApplicationsRefreshTrigger((prev) => prev + 1);
     } catch (err) {
       console.error("Error creating application:", err);
       const errorMessage =
@@ -344,6 +401,7 @@ const ClosureTracking = () => {
   // Handle Update button click
   const handleUpdate = async () => {
     await loadVulnerabilities(page, searchQuery);
+    await loadApplications(appPage, searchQuery);
     await loadStatistics();
     setSnackbar({
       open: true,
@@ -363,17 +421,47 @@ const ClosureTracking = () => {
 
       try {
         setUploading(true);
-        await applicationApi.bulkUploadApplications(file);
+        const data = await applicationApi.bulkUploadApplications(file);
 
-        setSnackbar({
-          open: true,
-          message: "Upload successful",
-          severity: "success",
-        });
+        // Check the actual results from the upload
+        if (data.success > 0) {
+          const successCount = data.success;
+          const failedCount = data.failed;
+          let message = `Upload successful — ${successCount} applications added`;
+          let severity = "success";
 
-        // Silently reload — table stays visible
+          if (failedCount > 0) {
+            message += `, ${failedCount} failed`;
+            severity = "warning";
+          }
+
+          setSnackbar({
+            open: true,
+            message: message,
+            severity: severity,
+          });
+        } else {
+          // No applications were successfully uploaded
+          setSnackbar({
+            open: true,
+            message:
+              data.failed > 0
+                ? `Upload failed — ${data.failed} rows had errors. Check file format.`
+                : "No applications were uploaded. Check file format and data.",
+            severity: "error",
+          });
+          // Don't refresh if nothing was uploaded
+          setUploading(false);
+          return;
+        }
+
+        // Only refresh if applications were actually added
         await loadVulnerabilities(1, searchQuery, false, true);
+        await loadApplications(1, searchQuery, true, true);
         await loadStatistics();
+
+        // Trigger refresh of applications in modals
+        setApplicationsRefreshTrigger((prev) => prev + 1);
       } catch (err) {
         console.error("Bulk upload error:", err);
         const errorMessage = err.detail || err.message || "Bulk upload failed";
@@ -535,6 +623,7 @@ const ClosureTracking = () => {
             const val = e.target.value;
             setSearchQuery(val);
             loadVulnerabilities(1, val);
+            loadApplications(1, val);
           }}
           InputProps={{
             startAdornment: (
@@ -673,6 +762,196 @@ const ClosureTracking = () => {
         </Box>
       </Box>
 
+      {/* Applications Table */}
+      {!loading && (
+        <Box sx={{ mb: 3 }}>
+          <DashboardCard sx={{ p: 0, overflow: "hidden" }}>
+            <Box
+              sx={{
+                p: 2,
+                borderBottom: "1px solid rgba(0,0,0,0.08)",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Box sx={{ textAlign: "center" }}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Applications
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Applications registered in the system
+                </Typography>
+              </Box>
+            </Box>
+            {appLoading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+                <CircularProgress size={32} />
+              </Box>
+            ) : applications.length === 0 ? (
+              <Box
+                sx={{
+                  p: 4,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Typography color="text.secondary">
+                  No applications found. Use &quot;Upload Application&quot; or
+                  &quot;Add App&quot; to register applications.
+                </Typography>
+              </Box>
+            ) : (
+              <TableContainer component={Paper}>
+                <Table stickyHeader sx={{ minWidth: 800 }} size="medium">
+                  <TableHead
+                    sx={{
+                      "& .MuiTableCell-root": {
+                        backgroundColor: "#f5f5f5",
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                        zIndex: 1,
+                      },
+                    }}
+                  >
+                    <TableRow>
+                      {[
+                        "ID",
+                        "Application Name",
+                        "Type",
+                        "Owner",
+                        "Vendor",
+                        "Risk Level",
+                        "URL",
+                      ].map((h, i) => (
+                        <TableCell key={i}>{h}</TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {applications.map((app) => {
+                      const isNew = newlyAddedAppIds.has(app.id);
+                      return (
+                        <TableRow
+                          key={app.id}
+                          hover
+                          sx={{
+                            "&:nth-of-type(odd)": {
+                              backgroundColor: isNew
+                                ? "rgba(76,175,80,0.12)"
+                                : "rgba(0,0,0,0.02)",
+                            },
+                            backgroundColor: isNew
+                              ? "rgba(76,175,80,0.12)"
+                              : undefined,
+                            outline: isNew
+                              ? "2px solid rgba(76,175,80,0.5)"
+                              : undefined,
+                            transition:
+                              "background-color 0.5s ease, outline 0.5s ease",
+                            "&:hover": { backgroundColor: "rgba(0,0,0,0.04)" },
+                          }}
+                        >
+                          <TableCell
+                            sx={{
+                              fontFamily: "monospace",
+                              fontWeight: "bold",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {app.id}
+                          </TableCell>
+                          <TableCell
+                            sx={{ fontWeight: 500, whiteSpace: "nowrap" }}
+                          >
+                            {app.name}
+                          </TableCell>
+                          <TableCell sx={{ whiteSpace: "nowrap" }}>
+                            {app.type
+                              ? app.type
+                                  .replace(/_/g, " ")
+                                  .replace(/\b\w/g, (c) => c.toUpperCase())
+                              : "—"}
+                          </TableCell>
+                          <TableCell>{app.owner || "—"}</TableCell>
+                          <TableCell>{app.vendor || "—"}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={(app.risk_level || "medium").toUpperCase()}
+                              size="small"
+                              sx={{
+                                backgroundColor:
+                                  app.risk_level === "critical"
+                                    ? "rgba(244,67,54,0.1)"
+                                    : app.risk_level === "high"
+                                      ? "rgba(255,152,0,0.1)"
+                                      : app.risk_level === "low"
+                                        ? "rgba(76,175,80,0.1)"
+                                        : "rgba(255,193,7,0.1)",
+                                color:
+                                  app.risk_level === "critical"
+                                    ? "#f44336"
+                                    : app.risk_level === "high"
+                                      ? "#ff9800"
+                                      : app.risk_level === "low"
+                                        ? "#4caf50"
+                                        : "#f59e0b",
+                                fontWeight: "bold",
+                                borderRadius: "4px",
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {app.url ? (
+                              <a
+                                href={app.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: "#3f51b5" }}
+                              >
+                                {app.url}
+                              </a>
+                            ) : (
+                              "—"
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </DashboardCard>
+          {/* Pagination lives outside the card so it is never clipped */}
+          {appTotalPages > 1 && !appLoading && applications.length > 0 && (
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                py: 1.5,
+                mt: "1px",
+                backgroundColor: "white",
+                borderTop: "1px solid rgba(0,0,0,0.08)",
+                borderRadius: "0 0 12px 12px",
+                boxShadow: dashboardTheme.shadows.card,
+              }}
+            >
+              <Pagination
+                count={appTotalPages}
+                page={appPage}
+                onChange={(_, p) => loadApplications(p, searchQuery)}
+                color="primary"
+                shape="rounded"
+                size="medium"
+              />
+            </Box>
+          )}
+        </Box>
+      )}
+
       {/* Vulnerabilities Table */}
       {!loading && (
         <DashboardCard
@@ -682,6 +961,24 @@ const ClosureTracking = () => {
             height: "auto",
           }}
         >
+          <Box
+            sx={{
+              p: 2,
+              borderBottom: "1px solid rgba(0,0,0,0.08)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Box sx={{ textAlign: "center" }}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Vulnerabilities
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Tracked vulnerabilities across all applications
+              </Typography>
+            </Box>
+          </Box>
           <VulnerabilityTable
             vulnerabilities={filteredVulnerabilities}
             onStatusUpdate={handleStatusUpdate}
@@ -708,6 +1005,7 @@ const ClosureTracking = () => {
         open={isAddVulnerabilityModalOpen}
         onClose={() => setIsAddVulnerabilityModalOpen(false)}
         onAddVulnerability={handleAddVulnerability}
+        refreshTrigger={applicationsRefreshTrigger}
       />
 
       {/* Toast for notifications */}

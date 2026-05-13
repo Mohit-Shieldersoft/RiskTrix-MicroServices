@@ -11,6 +11,15 @@ const AUDIT_SERVICE_URL =
   import.meta.env.VITE_AUDIT_SERVICE_URL || "http://localhost:8002";
 const MONOLITH_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const AGENT_SERVICE_URL =
+  import.meta.env.VITE_AGENT_SERVICE_URL || "http://localhost:8010";
+const BINARY_ANALYSIS_SERVICE_URL =
+  import.meta.env.VITE_BINARY_ANALYSIS_SERVICE_URL || "http://localhost:8011";
+const INTEGRITY_SERVICE_URL =
+  import.meta.env.VITE_INTEGRITY_SERVICE_URL || "http://localhost:8012";
+const THREAT_INTELLIGENCE_SERVICE_URL =
+  import.meta.env.VITE_THREAT_INTELLIGENCE_SERVICE_URL ||
+  "http://localhost:8013";
 
 // Define which paths belong to which service
 const SERVICE_ROUTES = {
@@ -42,10 +51,42 @@ const SERVICE_ROUTES = {
     "/api/v1/register",
     "/api/v1/organizations",
   ],
+  agent: ["/api/v1/agents", "/api/v1/endpoints"],
+  binaryAnalysis: ["/api/v1/binary", "/api/v1/yara"],
+  integrity: ["/api/v1/integrity"],
+  threatIntelligence: ["/api/v1/threats", "/api/v1/cve"],
 };
 
 // Determine which service to use based on the request path
 function getServiceURL(path) {
+  // Check agent service routes
+  for (const route of SERVICE_ROUTES.agent) {
+    if (path.startsWith(route)) {
+      return AGENT_SERVICE_URL;
+    }
+  }
+
+  // Check binary analysis service routes
+  for (const route of SERVICE_ROUTES.binaryAnalysis) {
+    if (path.startsWith(route)) {
+      return BINARY_ANALYSIS_SERVICE_URL;
+    }
+  }
+
+  // Check integrity service routes
+  for (const route of SERVICE_ROUTES.integrity) {
+    if (path.startsWith(route)) {
+      return INTEGRITY_SERVICE_URL;
+    }
+  }
+
+  // Check threat intelligence service routes
+  for (const route of SERVICE_ROUTES.threatIntelligence) {
+    if (path.startsWith(route)) {
+      return THREAT_INTELLIGENCE_SERVICE_URL;
+    }
+  }
+
   // Check application service routes
   for (const route of SERVICE_ROUTES.application) {
     if (path.startsWith(route)) {

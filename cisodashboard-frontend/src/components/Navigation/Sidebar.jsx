@@ -1,29 +1,37 @@
-import React, { useState, useEffect } from 'react'; // Added useState, useEffect
+import React, { useState, useEffect } from "react"; // Added useState, useEffect
 import {
-  Drawer, Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
-  Typography, Divider, Collapse // Added Collapse
-} from '@mui/material';
-import { Link as RouterLink, useLocation } from 'react-router-dom'; // Added useLocation
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import SecurityIcon from '@mui/icons-material/Security';
-import HistoryIcon from '@mui/icons-material/History';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import TaskIcon from '@mui/icons-material/Task';
-import SettingsIcon from '@mui/icons-material/Settings';
-import ReportProblemIcon from '@mui/icons-material/ReportProblem';
-import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
-import TimelineIcon from '@mui/icons-material/Timeline';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import AppIcon from '@mui/icons-material/Apps';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import EventBusyIcon from '@mui/icons-material/EventBusy';
-import ExpandLess from '@mui/icons-material/ExpandLess'; // Added ExpandLess
-import ExpandMore from '@mui/icons-material/ExpandMore'; // Added ExpandMore
-import FolderIcon from '@mui/icons-material/Folder'; // Example icon for parent items
-import GavelIcon from '@mui/icons-material/Gavel'; // Example icon for Audit parent
+  Drawer,
+  Box,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Typography,
+  Divider,
+  Collapse, // Added Collapse
+} from "@mui/material";
+import { Link as RouterLink, useLocation } from "react-router-dom"; // Added useLocation
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import SecurityIcon from "@mui/icons-material/Security";
+import HistoryIcon from "@mui/icons-material/History";
+import BarChartIcon from "@mui/icons-material/BarChart";
+import TaskIcon from "@mui/icons-material/Task";
+import SettingsIcon from "@mui/icons-material/Settings";
+import ReportProblemIcon from "@mui/icons-material/ReportProblem";
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import TimelineIcon from "@mui/icons-material/Timeline";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import AppIcon from "@mui/icons-material/Apps";
+import AssessmentIcon from "@mui/icons-material/Assessment";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import EventBusyIcon from "@mui/icons-material/EventBusy";
+import ExpandLess from "@mui/icons-material/ExpandLess"; // Added ExpandLess
+import ExpandMore from "@mui/icons-material/ExpandMore"; // Added ExpandMore
+import FolderIcon from "@mui/icons-material/Folder"; // Example icon for parent items
+import GavelIcon from "@mui/icons-material/Gavel"; // Example icon for Audit parent
 
-import dashboardTheme from '../../theme/dashboardTheme';
+import dashboardTheme from "../../theme/dashboardTheme";
 
 const Sidebar = ({ open, onClose }) => {
   const location = useLocation(); // Use location hook
@@ -35,99 +43,142 @@ const Sidebar = ({ open, onClose }) => {
   // Define menu structure with children for submenus
   const menuItems = [
     {
-      text: 'Dashboard',
+      text: "Dashboard",
       icon: <DashboardIcon />,
-      path: '/'
+      path: "/",
     },
     {
-      text: 'Application',
+      text: "Application",
       icon: <FolderIcon />, // Parent icon
       children: [
         {
-          text: 'Ageing',
+          text: "Ageing",
           icon: <TaskIcon />,
-          path: '/ageing'
+          path: "/ageing",
         },
         {
-          text: 'Closure Tracking',
+          text: "Closure Tracking",
           icon: <TaskIcon />,
-          path: '/closure-tracking'
+          path: "/closure-tracking",
         },
         {
-          text: 'App Reminders',
+          text: "App Reminders",
           icon: <AppIcon />,
-          path: '/application-reminder'
+          path: "/application-reminder",
         },
         {
-          text: 'App History',
+          text: "App History",
           icon: <HistoryIcon />,
-          path: '/app-history'
+          path: "/app-history",
         },
-      ]
+      ],
     },
     {
-      text: 'Audit',
+      text: "Audit",
       icon: <GavelIcon />, // Parent icon
       children: [
         {
-          text: 'Regulatory Compliance',
+          text: "Regulatory Compliance",
           icon: <VerifiedUserIcon />,
-          path: '/audit' // Assuming this is the correct path
+          path: "/audit", // Assuming this is the correct path
         },
         {
-          text: 'Vendor Compliance',
+          text: "Vendor Compliance",
           icon: <CheckCircleIcon />,
-          path: '/compliance'
+          path: "/compliance",
         },
         {
-          text: 'TPRM',
+          text: "TPRM",
           icon: <SecurityIcon />,
-          path: '/tprm'
+          path: "/tprm",
         },
         {
-          text: 'Exceptions',
+          text: "Exceptions",
           icon: <ReportProblemIcon />,
-          path: '/exceptions'
+          path: "/exceptions",
         },
         {
-          text: 'Audit History',
+          text: "Audit History",
           icon: <TimelineIcon />,
-          path: '/audit-history'
+          path: "/audit-history",
         },
         {
-          text: 'Reminders',
+          text: "Reminders",
           icon: <NotificationsIcon />,
-          path: '/reminder'
+          path: "/reminder",
         },
-      ]
+      ],
     },
     {
-      text: 'EOSL',
+      text: "Endpoint Security",
+      icon: <SecurityIcon />, // Parent icon
+      children: [
+        {
+          text: "Endpoint Overview",
+          icon: <DashboardIcon />,
+          path: "/endpoint-security",
+        },
+        {
+          text: "Binary Inventory",
+          icon: <FolderIcon />,
+          path: "/binary-inventory",
+        },
+        {
+          text: "Malware Detections",
+          icon: <ReportProblemIcon />,
+          path: "/malware-detections",
+        },
+        {
+          text: "Integrity Monitoring",
+          icon: <VerifiedUserIcon />,
+          path: "/integrity-monitoring",
+        },
+        {
+          text: "Threat Intelligence",
+          icon: <SecurityIcon />,
+          path: "/threat-intelligence",
+        },
+        {
+          text: "CVE Findings",
+          icon: <AssessmentIcon />,
+          path: "/cve-findings",
+        },
+        {
+          text: "Agent Management",
+          icon: <SettingsIcon />,
+          path: "/agent-management",
+        },
+      ],
+    },
+    {
+      text: "EOSL",
       icon: <EventBusyIcon />,
-      path: '/eosl'
+      path: "/eosl",
     },
     {
-      text: 'Reports',
+      text: "Reports",
       icon: <BarChartIcon />,
-      path: '/reports'
+      path: "/reports",
     },
     {
-      text: 'Settings',
+      text: "Settings",
       icon: <SettingsIcon />,
-      path: '/settings'
-    }
+      path: "/settings",
+    },
   ];
 
   // Function to handle submenu toggle
   const handleSubmenuClick = (text) => {
-    setOpenSubmenus(prev => ({ ...prev, [text]: !prev[text] }));
+    setOpenSubmenus((prev) => ({ ...prev, [text]: !prev[text] }));
   };
 
   // Effect to open parent menu if a child is selected on initial load or navigation
   useEffect(() => {
-    menuItems.forEach(item => {
+    menuItems.forEach((item) => {
       if (item.children) {
-        const isChildSelected = item.children.some(child => child.path === currentPath);
+        const isChildSelected = item.children.some(
+          (child) => child.path === currentPath,
+        );
         if (isChildSelected && !openSubmenus[item.text]) {
           // Open the parent submenu if a child is selected and the parent is closed
           handleSubmenuClick(item.text);
@@ -139,7 +190,7 @@ const Sidebar = ({ open, onClose }) => {
 
   // Helper function to check if a parent menu item should appear selected
   const isParentSelected = (item) => {
-    return item.children?.some(child => child.path === currentPath);
+    return item.children?.some((child) => child.path === currentPath);
   };
 
   return (
@@ -148,20 +199,28 @@ const Sidebar = ({ open, onClose }) => {
       open={open}
       onClose={onClose}
       sx={{
-        '& .MuiDrawer-paper': {
+        "& .MuiDrawer-paper": {
           width: 250,
           background: dashboardTheme.colors.background.main,
-          borderRight: 'none', // Cleaner look
-        }
+          borderRight: "none", // Cleaner look
+        },
       }}
     >
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', height: '64px' }}> {/* Match AppBar height */}
-        <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', color: dashboardTheme.colors.primary }}>
+      <Box sx={{ p: 2, display: "flex", alignItems: "center", height: "64px" }}>
+        {" "}
+        {/* Match AppBar height */}
+        <Typography
+          variant="h6"
+          component="div"
+          sx={{ fontWeight: "bold", color: dashboardTheme.colors.primary }}
+        >
           Vulnerability Monitor
         </Typography>
       </Box>
       <Divider />
-      <List sx={{ pt: 1 }}> {/* Add padding top */}
+      <List sx={{ pt: 1 }}>
+        {" "}
+        {/* Add padding top */}
         {menuItems.map((item) => {
           const isSelected = currentPath === item.path;
           const isParentCurrentlySelected = isParentSelected(item);
@@ -175,25 +234,31 @@ const Sidebar = ({ open, onClose }) => {
                   onClick={() => handleSubmenuClick(item.text)}
                   sx={{
                     mb: 0.5,
-                    borderRadius: '0 24px 24px 0',
-                    backgroundColor: isParentCurrentlySelected ? `${dashboardTheme.colors.primary}10` : 'transparent', // Highlight parent if child selected
-                    '&:hover': {
+                    borderRadius: "0 24px 24px 0",
+                    backgroundColor: isParentCurrentlySelected
+                      ? `${dashboardTheme.colors.primary}10`
+                      : "transparent", // Highlight parent if child selected
+                    "&:hover": {
                       backgroundColor: `${dashboardTheme.colors.primary}10`,
-                    }
+                    },
                   }}
                 >
-                  <ListItemIcon sx={{
-                    minWidth: '40px',
-                    color: isParentCurrentlySelected ? dashboardTheme.colors.primary : 'inherit'
-                  }}>
+                  <ListItemIcon
+                    sx={{
+                      minWidth: "40px",
+                      color: isParentCurrentlySelected
+                        ? dashboardTheme.colors.primary
+                        : "inherit",
+                    }}
+                  >
                     {item.icon}
                   </ListItemIcon>
                   <ListItemText
                     primary={item.text}
                     primaryTypographyProps={{
-                      fontWeight: isParentCurrentlySelected ?
-                        dashboardTheme.typography.fontWeights.semibold :
-                        dashboardTheme.typography.fontWeights.medium
+                      fontWeight: isParentCurrentlySelected
+                        ? dashboardTheme.typography.fontWeights.semibold
+                        : dashboardTheme.typography.fontWeights.medium,
                     }}
                   />
                   {isSubmenuOpen ? <ExpandLess /> : <ExpandMore />}
@@ -212,34 +277,36 @@ const Sidebar = ({ open, onClose }) => {
                           sx={{
                             pl: 4, // Indent submenu items
                             mb: 0.5,
-                            borderRadius: '0 24px 24px 0',
-                            '&.Mui-selected': {
+                            borderRadius: "0 24px 24px 0",
+                            "&.Mui-selected": {
                               backgroundColor: `${dashboardTheme.colors.primary}15`,
                               color: dashboardTheme.colors.primary,
-                              '& .MuiListItemIcon-root': {
+                              "& .MuiListItemIcon-root": {
                                 color: dashboardTheme.colors.primary,
-                              }
+                              },
                             },
-                            '&:hover': {
+                            "&:hover": {
                               backgroundColor: `${dashboardTheme.colors.primary}10`,
-                            }
+                            },
                           }}
                         >
-                          <ListItemIcon sx={{
-                            minWidth: '35px', // Slightly smaller icon spacing
-                            color: isChildSelected ?
-                              dashboardTheme.colors.primary :
-                              'inherit'
-                          }}>
+                          <ListItemIcon
+                            sx={{
+                              minWidth: "35px", // Slightly smaller icon spacing
+                              color: isChildSelected
+                                ? dashboardTheme.colors.primary
+                                : "inherit",
+                            }}
+                          >
                             {child.icon}
                           </ListItemIcon>
                           <ListItemText
                             primary={child.text}
                             primaryTypographyProps={{
-                              fontSize: '0.9rem', // Slightly smaller font for children
-                              fontWeight: isChildSelected ?
-                                dashboardTheme.typography.fontWeights.semibold :
-                                dashboardTheme.typography.fontWeights.medium
+                              fontSize: "0.9rem", // Slightly smaller font for children
+                              fontWeight: isChildSelected
+                                ? dashboardTheme.typography.fontWeights.semibold
+                                : dashboardTheme.typography.fontWeights.medium,
                             }}
                           />
                         </ListItemButton>
@@ -260,33 +327,35 @@ const Sidebar = ({ open, onClose }) => {
                 onClick={onClose}
                 sx={{
                   mb: 0.5,
-                  borderRadius: '0 24px 24px 0',
-                  '&.Mui-selected': {
+                  borderRadius: "0 24px 24px 0",
+                  "&.Mui-selected": {
                     backgroundColor: `${dashboardTheme.colors.primary}15`,
                     color: dashboardTheme.colors.primary,
-                    '& .MuiListItemIcon-root': {
+                    "& .MuiListItemIcon-root": {
                       color: dashboardTheme.colors.primary,
-                    }
+                    },
                   },
-                  '&:hover': {
+                  "&:hover": {
                     backgroundColor: `${dashboardTheme.colors.primary}10`,
-                  }
+                  },
                 }}
               >
-                <ListItemIcon sx={{
-                  minWidth: '40px',
-                  color: isSelected ?
-                    dashboardTheme.colors.primary :
-                    'inherit'
-                }}>
+                <ListItemIcon
+                  sx={{
+                    minWidth: "40px",
+                    color: isSelected
+                      ? dashboardTheme.colors.primary
+                      : "inherit",
+                  }}
+                >
                   {item.icon}
                 </ListItemIcon>
                 <ListItemText
                   primary={item.text}
                   primaryTypographyProps={{
-                    fontWeight: isSelected ?
-                      dashboardTheme.typography.fontWeights.semibold :
-                      dashboardTheme.typography.fontWeights.medium
+                    fontWeight: isSelected
+                      ? dashboardTheme.typography.fontWeights.semibold
+                      : dashboardTheme.typography.fontWeights.medium,
                   }}
                 />
               </ListItemButton>

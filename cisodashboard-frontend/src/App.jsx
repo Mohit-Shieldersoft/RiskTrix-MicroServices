@@ -27,6 +27,13 @@ import YourBoard from "./pages/YourBoard/YourBoard";
 import Login from "./pages/Login/Login";
 import Signup from "./pages/Signup/Signup";
 import AdminUsers from "./pages/AdminUsers/AdminUsers";
+import EndpointSecurity from "./pages/EndpointSecurity/EndpointSecurity";
+import BinaryInventory from "./pages/BinaryInventory/BinaryInventory";
+import MalwareDetections from "./pages/MalwareDetections/MalwareDetections";
+import IntegrityMonitoring from "./pages/IntegrityMonitoring/IntegrityMonitoring";
+import ThreatIntelligence from "./pages/ThreatIntelligence/ThreatIntelligence";
+import CVEFindings from "./pages/CVEFindings/CVEFindings";
+import AgentManagement from "./pages/AgentManagement/AgentManagement";
 import { getToken, getUserProfile } from "./utils/auth";
 // Create a Material UI theme based on our dashboard theme
 import dashboardTheme from "./theme/dashboardTheme";
@@ -314,6 +321,84 @@ function App() {
                   <AdminUsers />
                 </MainLayout>
               </AdminRoute>
+            }
+          />
+
+          {/* Endpoint Security Routes */}
+          <Route
+            path="/endpoint-security"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <EndpointSecurity />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/binary-inventory"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <BinaryInventory />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/malware-detections"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <MalwareDetections />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/integrity-monitoring"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <IntegrityMonitoring />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/threat-intelligence"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <ThreatIntelligence />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cve-findings"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <CVEFindings />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/agent-management"
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <AgentManagement />
+                </MainLayout>
+              </ProtectedRoute>
             }
           />
 

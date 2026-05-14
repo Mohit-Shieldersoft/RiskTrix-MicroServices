@@ -8,8 +8,24 @@ from app.services.agent_service import create_agent, get_agent_by_id, update_age
 from app.db.database import get_db
 import uuid
 from datetime import datetime
+from pydantic import BaseModel
+import httpx
+import asyncio
 
 router = APIRouter()
+
+class StatusUpdate(BaseModel):
+    status: str
+
+@router.get("/", response_model=list[AgentSchema])
+async def list_agents(db: AsyncSession = Depends(get_db)):
+    """List all agents"""
+    try:
+        result = await db.execute(select(Agent).order_by(Agent.registered_at.desc()))
+        agents = result.scalars().all()
+        return agents
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch agents: {str(e)}")
 
 @router.post("/register", response_model=dict)
 async def register_agent(agent: AgentCreate, db: AsyncSession = Depends(get_db)):
@@ -43,29 +59,19 @@ async def heartbeat(agent_id: str, heartbeat: Heartbeat, db: AsyncSession = Depe
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Heartbeat failed: {str(e)}")
 
-@router.get("/", response_model=list[AgentSchema])
-async def list_agents(db: AsyncSession = Depends(get_db)):
-    """Get all registered agents"""
-    try:
-        result = await db.execute(select(Agent))
-        agents = result.scalars().all()
-        # Convert SQLAlchemy objects to Pydantic models with proper UUID conversion
-        return [
-            AgentSchema(
-                id=str(agent.id),
-                hostname=agent.hostname,
-                os=agent.os,
-                arch=agent.arch,
-                ip_address=agent.ip_address,
-                agent_version=agent.agent_version,
-                status=agent.status,
-                last_heartbeat=agent.last_heartbeat,
-                registered_at=agent.registered_at
-            )
-            for agent in agents
-        ]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch agents: {str(e)}")
+@router.get("/policies", response_model=dict)
+async def get_agent_policies():
+    """Get agent policies"""
+    # TODO: Implement policy retrieval from database
+    # For now, return basic policies
+    return {
+        "policies": {
+            "heartbeat_interval": 30,
+            "scan_enabled": True,
+            "remote_actions_enabled": True,
+            "logging_level": "info"
+        }
+    }
 
 @router.get("/{agent_id}", response_model=AgentSchema)
 async def get_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
@@ -81,18 +87,18 @@ async def get_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Failed to fetch agent: {str(e)}")
 
 @router.patch("/{agent_id}/status")
-async def update_agent_status(agent_id: str, status: str, db: AsyncSession = Depends(get_db)):
+async def update_agent_status(agent_id: str, status_update: StatusUpdate, db: AsyncSession = Depends(get_db)):
     """Update agent status"""
     try:
         agent = await get_agent_by_id(db, agent_id)
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
 
-        agent.status = status
+        agent.status = status_update.status
         await db.commit()
         await db.refresh(agent)
 
-        return {"status": "updated", "agent_id": agent_id, "new_status": status}
+        return {"status": "updated", "agent_id": agent_id, "new_status": status_update.status}
     except HTTPException:
         raise
     except Exception as e:
@@ -107,6 +113,9 @@ async def request_scan(agent_id: str, db: AsyncSession = Depends(get_db)):
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
 
+        # Update agent's last scan time
+        agent.last_scan_at = datetime.utcnow()
+
         # Create scan request
         scan_request = ScanRequest(
             agent_id=uuid.UUID(agent_id),
@@ -117,8 +126,16 @@ async def request_scan(agent_id: str, db: AsyncSession = Depends(get_db)):
         await db.commit()
         await db.refresh(scan_request)
 
+        # Create mock scan results for demo purposes
+        await create_mock_scan_results(agent_id)
+
+        # Mark scan request as completed
+        scan_request.status = "completed"
+        scan_request.completed_at = datetime.utcnow()
+        await db.commit()
+
         return {
-            "status": "requested",
+            "status": "completed",
             "scan_request_id": str(scan_request.id),
             "agent_id": agent_id,
             "requested_at": scan_request.requested_at.isoformat()
@@ -127,6 +144,51 @@ async def request_scan(agent_id: str, db: AsyncSession = Depends(get_db)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to request scan: {str(e)}")
+
+async def create_mock_scan_results(agent_id: str):
+    """Create mock scan results for demo purposes"""
+    try:
+        mock_results = [
+            {
+                "agent_id": agent_id,
+                "file_path": "C:\\Windows\\System32\\test.exe",
+                "file_name": "test.exe",
+                "sha256": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+                "md5": "d41d8cd98f00b204e9800998ecf8427e",
+                "file_size": 1024000,
+                "entropy": 6.5,
+                "file_type": "PE32 executable",
+                "is_signed": True,
+                "yara_matches": []
+            },
+            {
+                "agent_id": agent_id,
+                "file_path": "C:\\Users\\user\\Documents\\suspicious.dll",
+                "file_name": "suspicious.dll",
+                "sha256": "b665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae4",
+                "md5": "e41d8cd98f00b204e9800998ecf8427f",
+                "file_size": 512000,
+                "entropy": 7.2,
+                "file_type": "PE32 DLL",
+                "is_signed": False,
+                "yara_matches": ["suspicious_pattern"]
+            }
+        ]
+
+        async with httpx.AsyncClient() as client:
+            for result in mock_results:
+                try:
+                    response = await client.post(
+                        "http://binary-analysis-service:8011/api/v1/binary/submit",
+                        json=result,
+                        timeout=5.0
+                    )
+                    print(f"Submitted mock scan result: {response.status_code}")
+                except Exception as e:
+                    print(f"Failed to submit mock result: {e}")
+
+    except Exception as e:
+        print(f"Failed to create mock scan results: {e}")
 
 @router.get("/{agent_id}/pending-scans")
 async def get_pending_scans(agent_id: str, db: AsyncSession = Depends(get_db)):

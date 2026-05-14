@@ -4,6 +4,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Config struct {
@@ -14,17 +16,27 @@ type Config struct {
 	WatchPaths       []string
 	AgentID          string
 	JWTToken         string
+	Registered       bool
 }
 
 func LoadConfig() *Config {
+	agentID := getEnv("AGENT_ID", "")
+	if agentID == "" {
+		agentID = uuid.New().String()
+	}
+
+	jwtToken := getEnv("JWT_TOKEN", "")
+	registered := jwtToken != ""
+
 	return &Config{
 		AgentServiceURL:  getEnv("AGENT_SERVICE_URL", "http://localhost:8010"),
 		BinaryServiceURL: getEnv("BINARY_SERVICE_URL", "http://localhost:8011"),
 		SecretKey:        getEnv("SECRET_KEY", "default-secret"),
-		ScanInterval:     time.Duration(getEnvAsInt("SCAN_INTERVAL", 30)) * time.Second,     // 30 seconds for testing
-		WatchPaths:       []string{"C:\\Temp", "C:\\Windows\\System32\\notepad.exe"},        // Simple test paths
-		AgentID:          getEnv("AGENT_ID", "2f396b1e-7475-42b8-b217-4aec6a430aed"),        // Use existing agent ID
-		JWTToken:         getEnv("JWT_TOKEN", "agent-2f396b1e-7475-42b8-b217-4aec6a430aed"), // Use existing token
+		ScanInterval:     time.Duration(getEnvAsInt("SCAN_INTERVAL", 30)) * time.Second,
+		WatchPaths:       []string{"C:\\Temp", "C:\\Windows\\System32\\notepad.exe"},
+		AgentID:          agentID,
+		JWTToken:         jwtToken,
+		Registered:       registered,
 	}
 }
 
@@ -42,4 +54,14 @@ func getEnvAsInt(key string, defaultValue int) int {
 		}
 	}
 	return defaultValue
+}
+
+// SaveConfig saves the agent ID and JWT token to environment or config file
+func (c *Config) SaveConfig() error {
+	// For now, just set environment variables
+	// In production, this should save to a secure config file
+	os.Setenv("AGENT_ID", c.AgentID)
+	os.Setenv("JWT_TOKEN", c.JWTToken)
+	c.Registered = true
+	return nil
 }

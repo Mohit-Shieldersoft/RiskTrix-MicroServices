@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 func getEnv(key, defaultValue string) string {
@@ -46,8 +48,13 @@ func NewClient(cfg *config.Config) *Client {
 }
 
 func (c *Client) Register() error {
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknown"
+	}
+
 	req := RegisterRequest{
-		Hostname:     "localhost", // TODO: get actual hostname
+		Hostname:     hostname,
 		OS:           utils.GetOS(),
 		Arch:         utils.GetArch(),
 		AgentVersion: "1.0.0",
@@ -74,9 +81,8 @@ func (c *Client) Register() error {
 	c.config.AgentID = regResp.AgentID
 	c.config.JWTToken = regResp.JWTToken
 
-	// TODO: Save to local config file
-
-	return nil
+	// Save config
+	return c.config.SaveConfig()
 }
 
 func (c *Client) SendHeartbeat() error {
@@ -84,11 +90,23 @@ func (c *Client) SendHeartbeat() error {
 		return fmt.Errorf("agent not registered")
 	}
 
+	// Get CPU usage
+	cpuPercent, err := cpu.Percent(time.Second, false)
+	if err != nil {
+		cpuPercent = []float64{0.0}
+	}
+
+	// Get memory usage
+	memStats, err := mem.VirtualMemory()
+	if err != nil {
+		memStats = &mem.VirtualMemoryStat{}
+	}
+
 	req := HeartbeatRequest{
 		Status:     "active",
-		CPUUsage:   0.0,        // TODO: get actual CPU usage
-		MemUsage:   0.0,        // TODO: get actual memory usage
-		LastScanAt: time.Now(), // TODO: track last scan time
+		CPUUsage:   cpuPercent[0],
+		MemUsage:   memStats.UsedPercent,
+		LastScanAt: time.Now(), // TODO: track actual last scan time
 	}
 
 	resp, err := c.agentClient.R().

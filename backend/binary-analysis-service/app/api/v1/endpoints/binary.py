@@ -64,15 +64,23 @@ async def submit_scan(scan_data: ScanResult, db: AsyncSession = Depends(get_db))
         raise HTTPException(status_code=500, detail=f"Failed to submit scan: {str(e)}")
 
 @router.get("/inventory")
-async def get_inventory(limit: int = 100, offset: int = 0, db: AsyncSession = Depends(get_db)):
+async def get_inventory(agent_id: Optional[str] = None, date: Optional[str] = None, limit: int = 100, offset: int = 0, db: AsyncSession = Depends(get_db)):
     """Get binary scan inventory"""
     try:
-        result = await db.execute(
-            select(BinaryScan)
-            .order_by(BinaryScan.scanned_at.desc())
-            .limit(limit)
-            .offset(offset)
-        )
+        query = select(BinaryScan).order_by(BinaryScan.scanned_at.desc())
+
+        # Filter by agent_id if provided
+        if agent_id:
+            query = query.where(BinaryScan.agent_id == agent_id)
+
+        # Filter by date if provided (YYYY-MM-DD format)
+        if date:
+            from datetime import datetime
+            start_date = datetime.fromisoformat(f"{date}T00:00:00")
+            end_date = datetime.fromisoformat(f"{date}T23:59:59")
+            query = query.where(BinaryScan.scanned_at >= start_date, BinaryScan.scanned_at <= end_date)
+
+        result = await db.execute(query.limit(limit).offset(offset))
         scans = result.scalars().all()
 
         return {

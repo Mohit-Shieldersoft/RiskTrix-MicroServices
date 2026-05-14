@@ -1,6 +1,5 @@
 # Micro-CISO Microservices Architecture
 # Phase 7: Docker Compose for Application and Audit Services
-version: "3.8"
 
 services:
   # PostgreSQL Database (Shared during transition)
@@ -193,7 +192,40 @@ services:
       retries: 3
       start_period: 60s
 
-  # Agent Service - Endpoint agent registration and heartbeat (Phase 7)
+  # API Gateway (Nginx) - Routes frontend requests to microservices
+  api-gateway:
+    image: nginx:alpine
+    container_name: micro-ciso-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./backend/api-gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - micro-ciso-network
+    depends_on:
+      cisodashboard-backend:
+        condition: service_healthy
+      application-service:
+        condition: service_healthy
+      audit-service:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Agent Service (Phase 1 - Endpoint Security)
   agent-service:
     build:
       context: ./backend/agent-service
@@ -201,16 +233,25 @@ services:
     container_name: agent-service
     restart: unless-stopped
     environment:
+      # Service Config
       PORT: 8010
       ENVIRONMENT: development
+
+      # Database
       POSTGRES_SERVER: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: risktrix_db
       DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/risktrix_db
+
+      # Redis
       REDIS_URL: redis://redis:6379
+
+      # Security
       SECRET_KEY: your-super-secret-key-change-in-production
+
+      # Logging
       LOG_LEVEL: INFO
     ports:
       - "8010:8010"
@@ -228,9 +269,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 40s
 
-  # Binary Analysis Service - YARA-based binary scanning (Phase 7)
+  # Binary Analysis Service (Phase 2 - Endpoint Security)
   binary-analysis-service:
     build:
       context: ./backend/binary-analysis-service
@@ -238,16 +279,25 @@ services:
     container_name: binary-analysis-service
     restart: unless-stopped
     environment:
+      # Service Config
       PORT: 8011
       ENVIRONMENT: development
+
+      # Database
       POSTGRES_SERVER: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: risktrix_db
       DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/risktrix_db
+
+      # Redis
       REDIS_URL: redis://redis:6379
+
+      # Security
       SECRET_KEY: your-super-secret-key-change-in-production
+
+      # Logging
       LOG_LEVEL: INFO
     ports:
       - "8011:8011"
@@ -267,7 +317,7 @@ services:
       retries: 3
       start_period: 40s
 
-  # Integrity Service - File integrity monitoring (Phase 7)
+  # Integrity Service (Phase 3 - Endpoint Security)
   integrity-service:
     build:
       context: ./backend/integrity-service
@@ -275,16 +325,25 @@ services:
     container_name: integrity-service
     restart: unless-stopped
     environment:
+      # Service Config
       PORT: 8012
       ENVIRONMENT: development
+
+      # Database
       POSTGRES_SERVER: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: risktrix_db
       DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/risktrix_db
+
+      # Redis
       REDIS_URL: redis://redis:6379
+
+      # Security
       SECRET_KEY: your-super-secret-key-change-in-production
+
+      # Logging
       LOG_LEVEL: INFO
     ports:
       - "8012:8012"
@@ -304,7 +363,7 @@ services:
       retries: 3
       start_period: 40s
 
-  # Threat Intelligence Service - CVE feeds and threat data (Phase 7)
+  # Threat Intelligence Service (Phase 4 - Endpoint Security)
   threat-intelligence-service:
     build:
       context: ./backend/threat-intelligence-service
@@ -312,16 +371,25 @@ services:
     container_name: threat-intelligence-service
     restart: unless-stopped
     environment:
+      # Service Config
       PORT: 8013
       ENVIRONMENT: development
+
+      # Database
       POSTGRES_SERVER: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: risktrix_db
       DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/risktrix_db
+
+      # Redis
       REDIS_URL: redis://redis:6379
+
+      # Security
       SECRET_KEY: your-super-secret-key-change-in-production
+
+      # Logging
       LOG_LEVEL: INFO
     ports:
       - "8013:8013"
@@ -340,38 +408,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-  # API Gateway (Nginx) - Routes frontend requests to microservices
-  api-gateway:
-    image: nginx:alpine
-    container_name: micro-ciso-gateway
-    restart: unless-stopped
-    ports:
-      - "8080:80"
-    volumes:
-      - ./backend/api-gateway/nginx.conf:/etc/nginx/nginx.conf:ro
-    networks:
-      - micro-ciso-network
-    depends_on:
-      - application-service
-      - audit-service
-      - cisodashboard-backend
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--quiet",
-          "--tries=1",
-          "--spider",
-          "http://localhost/health",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    profiles:
-      - gateway
 
 networks:
   micro-ciso-network:

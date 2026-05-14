@@ -116,7 +116,7 @@ const Sidebar = ({ open, onClose }) => {
         {
           text: "Endpoint Overview",
           icon: <DashboardIcon />,
-          path: "/endpoint-security",
+          path: "/endpoint-security/overview",
         },
         {
           text: "Binary Inventory",
@@ -146,7 +146,7 @@ const Sidebar = ({ open, onClose }) => {
         {
           text: "Agent Management",
           icon: <SettingsIcon />,
-          path: "/agent-management",
+          path: "/endpoint-security/agents",
         },
       ],
     },

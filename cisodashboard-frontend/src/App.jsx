@@ -324,9 +324,8 @@ function App() {
             }
           />
 
-          {/* Endpoint Security Routes */}
           <Route
-            path="/endpoint-security"
+            path="/endpoint-security/overview"
             element={
               <ProtectedRoute>
                 <MainLayout>
@@ -392,7 +391,7 @@ function App() {
           />
 
           <Route
-            path="/agent-management"
+            path="/endpoint-security/agents"
             element={
               <ProtectedRoute>
                 <MainLayout>

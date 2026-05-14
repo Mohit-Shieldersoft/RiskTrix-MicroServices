@@ -25,11 +25,14 @@ def upgrade() -> None:
         sa.Column('id', sa.UUID(), nullable=False),
         sa.Column('hostname', sa.String(), nullable=False),
         sa.Column('os', sa.String(), nullable=False),
+        sa.Column('os_version', sa.String()),
+        sa.Column('kernel_version', sa.String()),
         sa.Column('arch', sa.String(), nullable=False),
         sa.Column('ip_address', sa.String(), nullable=True),
         sa.Column('agent_version', sa.String(), nullable=True),
         sa.Column('status', sa.String(), nullable=True),
         sa.Column('last_heartbeat', sa.DateTime(), nullable=True),
+        sa.Column('last_scan_at', sa.DateTime(), nullable=True),
         sa.Column('registered_at', sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )

@@ -1,7 +1,16 @@
 *.env
+.env.example
 *.md
 seed_data.sql
 *.pdf
+
+# Specific root-level files to exclude
+generate_pdf.py
+risktrix_backup.sql
+risktrix_backup.dump
+setup-docker.bat
+setup-docker.sh
+.gitignore-docker
 
 # Database dumps
 *.dump

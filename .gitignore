@@ -2,3 +2,41 @@
 *.md
 seed_data.sql
 *.pdf
+
+# Database dumps
+*.dump
+*.sql
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Node.js
+node_modules/
+dist/
+build/
+.npm/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+
+# Uploads (runtime data)
+uploads/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

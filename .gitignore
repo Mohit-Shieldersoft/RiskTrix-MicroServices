@@ -1,3 +1,4 @@
 *.env
 *.md
 seed_data.sql
+*.pdf

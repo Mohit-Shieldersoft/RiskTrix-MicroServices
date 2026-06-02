@@ -510,7 +510,7 @@ services:
   # CISO Dashboard Frontend (Port 8888) - React + Vite
   cisodashboard-frontend:
     build:
-      context: ./frontend/cisodashboard-frontend
+      context: ./cisodashboard-frontend
       dockerfile: Dockerfile
     container_name: cisodashboard-frontend
     restart: unless-stopped
@@ -532,8 +532,8 @@ services:
     ports:
       - "8888:8888"
     volumes:
-      - ./frontend/cisodashboard-frontend/src:/app/src
-      - ./frontend/cisodashboard-frontend/public:/app/public
+      - ./cisodashboard-frontend/src:/app/src
+      - ./cisodashboard-frontend/public:/app/public
     networks:
       - micro-ciso-network
     depends_on:

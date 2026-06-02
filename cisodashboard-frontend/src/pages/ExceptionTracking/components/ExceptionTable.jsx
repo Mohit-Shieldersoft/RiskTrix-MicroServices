@@ -16,8 +16,11 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import CancelIcon from '@mui/icons-material/Cancel';
 import exceptionApi from '../../../utils/exceptionApi';
 import dashboardTheme from '../../../theme/dashboardTheme';
+import { hasPermission } from '../../../utils/permissions';
 
 const ExceptionTable = ({ data, onRefresh, loading = false }) => {
+  const canUpdate = hasPermission('exceptions', 'update');
+  const canCreate = hasPermission('exceptions', 'create');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [selectedException, setSelectedException] = useState(null);
@@ -325,7 +328,7 @@ const ExceptionTable = ({ data, onRefresh, loading = false }) => {
                         >
                           Download
                         </Button>
-                      ) : (
+                      ) : canCreate ? (
                         <Button
                           variant="outlined"
                           size="small"
@@ -342,23 +345,25 @@ const ExceptionTable = ({ data, onRefresh, loading = false }) => {
                         >
                           Upload
                         </Button>
-                      )}
+                      ) : null}
                     </TableCell>
                     
                     <TableCell align="center">
-                      <IconButton
-                        color="primary"
-                        onClick={() => handleUpdateClick(exception)}
-                        size="small"
-                        sx={{
-                          backgroundColor: 'rgba(63, 81, 181, 0.1)',
-                          '&:hover': {
-                            backgroundColor: 'rgba(63, 81, 181, 0.2)',
-                          }
-                        }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
+                      {canUpdate && (
+                        <IconButton
+                          color="primary"
+                          onClick={() => handleUpdateClick(exception)}
+                          size="small"
+                          sx={{
+                            backgroundColor: 'rgba(63, 81, 181, 0.1)',
+                            '&:hover': {
+                              backgroundColor: 'rgba(63, 81, 181, 0.2)',
+                            }
+                          }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      )}
                     </TableCell>
                   </TableRow>
                 );

@@ -24,20 +24,27 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Copy project
 COPY . .
 
+# Copy entrypoint script
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+
 # Create uploads directory
 RUN mkdir -p uploads
 
 # Create non-root user
 RUN adduser --disabled-password --gecos '' appuser \
     && chown -R appuser:appuser /app
+
+# Make entrypoint executable
+RUN chmod +x /app/docker-entrypoint.sh
+
 USER appuser
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=30s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Expose port
 EXPOSE 8000
 
-# Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run migrations and start the application
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

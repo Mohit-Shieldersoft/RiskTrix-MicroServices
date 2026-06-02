@@ -17,7 +17,8 @@ depends_on = None
 
 def upgrade() -> None:
     # Add 'standard' value to the userrole enum
-    op.execute("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'standard' AFTER 'admin'")
+    # Note: PostgreSQL doesn't support AFTER clause for enum values, so add without position
+    op.execute("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'standard'")
 
 
 def downgrade() -> None:

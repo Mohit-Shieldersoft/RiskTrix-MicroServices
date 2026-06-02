@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import {
   Box, Paper, Typography, TextField, Button, Grid, Tabs, Tab, 
   FormControl, InputLabel, Select, MenuItem, Divider, IconButton,
@@ -59,7 +59,6 @@ function TabPanel(props) {
 // Main component
 const Settings = () => {
   const theme = useTheme();
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
   const API_PREFIX = '/api/v1';
   const [tabValue, setTabValue] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -136,7 +135,7 @@ const Settings = () => {
   const loadProfiles = async () => {
   // use module-level API_BASE_URL/API_PREFIX
     try {
-      const res = await axios.get(`${API_BASE_URL}${API_PREFIX}/users/`);
+      const res = await api.get(`${API_PREFIX}/users/`);
       const items = res.data?.items || [];
       const normalized = items.map((u, idx) => {
         // Accept multiple possible backend keys and normalize to lowercase where appropriate
@@ -323,9 +322,9 @@ const handleSmtpChange = (eOrObj) => {
         // update existing user
         // don't send empty password
         if (!payload.password) delete payload.password;
-        res = await axios.put(`${API_BASE_URL}${API_PREFIX}/users/${editingUserId}`, payload);
+        res = await api.put(`${API_PREFIX}/users/${editingUserId}`, payload);
       } else {
-        res = await axios.post(`${API_BASE_URL}${API_PREFIX}/users/`, payload);
+        res = await api.post(`${API_PREFIX}/users/`, payload);
       }
       const created = res.data;
 
@@ -421,7 +420,7 @@ const handleSmtpChange = (eOrObj) => {
     setConfirmOpen(false);
     if (!userId) return;
     try {
-      const res = await axios.delete(`${API_BASE_URL}${API_PREFIX}/users/${userId}`);
+      const res = await api.delete(`${API_PREFIX}/users/${userId}`);
       if (res.status === 200 || res.status === 204) {
         await loadProfiles();
         setToast({ open: true, message: 'Profile deleted', severity: 'success' });

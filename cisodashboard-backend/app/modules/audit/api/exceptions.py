@@ -4,6 +4,7 @@ from typing import List, Optional
 from datetime import date, datetime
 
 from app.db.session import get_session
+from app.modules.shared.api.auth import get_current_user
 from app.schemas.exception import (
     ExceptionCreate, ExceptionUpdate, ExceptionResponse,
     ExceptionListResponse, ExceptionFilters, ExceptionStats,
@@ -227,14 +228,21 @@ async def approve_exception(
     exception_id: int,
     approval_status: str = Query(..., regex="^(approved|rejected)$", description="Approval status"),
     db: AsyncSession = Depends(get_session),
-    current_user_id: Optional[int] = None  # TODO: Add authentication dependency
+    current_user=Depends(get_current_user)
 ):
     """
     Approve or reject an exception.
-    
+
     - **approval_status**: Either 'approved' or 'rejected'
+    - Requires CISO or Admin role.
     """
-    return await exception_service.approve_exception(db, exception_id, approval_status, current_user_id)
+    role_val = current_user.role.value if hasattr(current_user.role, 'value') else str(current_user.role)
+    if role_val.lower() not in ('admin', 'ciso'):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only CISO or Admin can approve or reject exceptions"
+        )
+    return await exception_service.approve_exception(db, exception_id, approval_status, current_user.id)
 
 
 @router.get("/expiring/soon", response_model=List[ExceptionResponse])

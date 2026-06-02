@@ -11,13 +11,13 @@ from app.db.session import Base
 
 class UserRole(str, Enum):
     """User roles enumeration"""
-    ADMIN = "ADMIN"
-    CISO = "CISO"
-    INFOSEC_MANAGER = "INFOSEC_MANAGER"
-    EXTERNAL_AUDITOR = "EXTERNAL_AUDITOR"
-    INTERNAL_AUDITOR = "INTERNAL_AUDITOR"
-    SECURITY_ANALYST = "SECURITY_ANALYST"
-    VIEWER = "VIEWER"
+    ADMIN = "admin"
+    CISO = "ciso"
+    INFOSEC_MANAGER = "infosec_manager"
+    EXTERNAL_AUDITOR = "external_auditor"
+    INTERNAL_AUDITOR = "internal_auditor"
+    SECURITY_ANALYST = "security_analyst"
+    VIEWER = "viewer"
 
 
 class RiskLevel(str, Enum):
@@ -98,7 +98,7 @@ class User(Base, TimestampMixin):
     hashed_password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     is_superuser = Column(Boolean, default=False, nullable=False)
-    role = Column(SQLEnum(UserRole), default=UserRole.VIEWER, nullable=False)
+    role = Column(SQLEnum(UserRole, values_callable=lambda obj: [e.value for e in obj], native_enum=False), default=UserRole.VIEWER, nullable=False)
     last_login = Column(DateTime(timezone=True), nullable=True)
     phone = Column(String(20), nullable=True)
     department = Column(String(100), nullable=True)

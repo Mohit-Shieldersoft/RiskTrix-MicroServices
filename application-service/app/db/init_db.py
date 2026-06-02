@@ -54,7 +54,15 @@ async def check_tables():
         return tables
 
 
+# if __name__ == "__main__":
+#     # Run initialization
+#     asyncio.run(init_db())
+#     asyncio.run(check_tables())
+
+
+async def main():
+    await init_db()
+    await check_tables()
+
 if __name__ == "__main__":
-    # Run initialization
-    asyncio.run(init_db())
-    asyncio.run(check_tables())
+    asyncio.run(main())

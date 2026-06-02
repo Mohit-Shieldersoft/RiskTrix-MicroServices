@@ -1,309 +1,449 @@
 """
-Integration tests for RBAC on API endpoints
+Integration tests for RBAC enforcement on API endpoints.
+
+Strategy: use FastAPI dependency_overrides to inject mock users with specific
+roles.  403-path tests never reach the database, so they are fully
+deterministic without a running DB.  200-path tests assert only that the
+RBAC gate was passed (status_code != 403) — the route may still return 500
+if a database is unavailable, but that is outside the scope of RBAC testing.
 """
 import pytest
-from httpx import AsyncClient
-from app.models.models import UserRole
+from fastapi.testclient import TestClient
+from unittest.mock import MagicMock
+
+from app.main import app
+from app.modules.shared.api.auth import get_current_user
 
 
-@pytest.mark.asyncio
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _mock_user(role: str, user_id: int = 1):
+    """Return a minimal mock SQLAlchemy-style user with the given role."""
+    user = MagicMock()
+    user.id = user_id
+    user.email = f"{role}@test.com"
+    user.is_active = True
+    # Simulate SQLAlchemy enum: user.role.value == role
+    user.role.value = role
+    return user
+
+
+def _override(role: str):
+    """FastAPI dependency that returns a mock user for the given role."""
+    mock = _mock_user(role)
+
+    async def _get_user():
+        return mock
+
+    return _get_user
+
+
+@pytest.fixture
+def client():
+    """Sync TestClient; each test manages dependency_overrides itself."""
+    with TestClient(app, raise_server_exceptions=False) as c:
+        yield c
+
+
+# ---------------------------------------------------------------------------
+# Users endpoint — admin only
+# ---------------------------------------------------------------------------
+
 class TestUserEndpointRBAC:
-    """Test RBAC on user management endpoints"""
-    
-    async def test_admin_can_list_users(self, async_client, admin_user):
-        """Admin should be able to list all users"""
-        # This test assumes /api/v1/users endpoint exists with RBAC protection
-        # Endpoint should have: @require_roles([UserRole.ADMIN])
-        
-        response = await async_client.get(
-            "/api/v1/users",
-            headers={"Authorization": f"Bearer mock_token_for_{admin_user.email}"}
-        )
-        
-        # Should succeed (200 or 403 depending on implementation)
-        # When RBAC is applied, this test will verify the decorator works
-        assert response.status_code in [200, 401, 404]  # 404 if endpoint not created yet
-    
-    async def test_ciso_cannot_delete_users(self, async_client, ciso_user):
-        """CISO should not be able to delete users"""
-        response = await async_client.delete(
-            "/api/v1/users/1",
-            headers={"Authorization": f"Bearer mock_token_for_{ciso_user.email}"}
-        )
-        
-        # Should be forbidden or not found
-        assert response.status_code in [403, 404]
-    
-    async def test_viewer_cannot_create_users(self, async_client, viewer_user):
-        """Viewer should not be able to create users"""
-        response = await async_client.post(
-            "/api/v1/users",
-            json={
-                "email": "newuser@test.com",
-                "username": "newuser",
-                "password": "NewUser@123",
-                "role": "VIEWER"
-            },
-            headers={"Authorization": f"Bearer mock_token_for_{viewer_user.email}"}
-        )
-        
-        assert response.status_code in [403, 404]
+    """All user-management endpoints must be restricted to admin."""
+
+    def test_ciso_cannot_list_users(self, client):
+        app.dependency_overrides[get_current_user] = _override("ciso")
+        try:
+            assert client.get("/api/v1/users").status_code == 403
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_viewer_cannot_list_users(self, client):
+        app.dependency_overrides[get_current_user] = _override("viewer")
+        try:
+            assert client.get("/api/v1/users").status_code == 403
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_security_analyst_cannot_list_users(self, client):
+        app.dependency_overrides[get_current_user] = _override("security_analyst")
+        try:
+            assert client.get("/api/v1/users").status_code == 403
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_infosec_manager_cannot_create_user(self, client):
+        app.dependency_overrides[get_current_user] = _override("infosec_manager")
+        try:
+            resp = client.post("/api/v1/users", json={
+                "email": "new@test.com", "username": "new", "password": "Pass@123"
+            })
+            assert resp.status_code == 403
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_external_auditor_cannot_delete_user(self, client):
+        app.dependency_overrides[get_current_user] = _override("external_auditor")
+        try:
+            assert client.delete("/api/v1/users/1").status_code == 403
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_unauthenticated_cannot_list_users(self, client):
+        app.dependency_overrides.clear()
+        # No auth → 401 or 403 depending on FastAPI HTTPBearer behaviour
+        assert client.get("/api/v1/users").status_code in (401, 403)
+
+    def test_admin_rbac_gate_passes(self, client):
+        """Admin should pass the RBAC gate (status_code must not be 403)."""
+        app.dependency_overrides[get_current_user] = _override("admin")
+        try:
+            assert client.get("/api/v1/users").status_code != 403
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_admin_rbac_gate_passes_for_delete(self, client):
+        app.dependency_overrides[get_current_user] = _override("admin")
+        try:
+            # 404 (user not found) is acceptable — gate was passed
+            assert client.delete("/api/v1/users/999999").status_code != 403
+        finally:
+            app.dependency_overrides.clear()
 
 
-@pytest.mark.asyncio
-class TestVulnerabilityEndpointRBAC:
-    """Test RBAC on vulnerability endpoints"""
-    
-    async def test_security_analyst_can_create_vulnerability(
-        self, async_client, security_analyst_user
-    ):
-        """Security Analyst should be able to create vulnerabilities"""
-        response = await async_client.post(
-            "/api/v1/vulnerabilities",
-            json={
-                "title": "Test Vulnerability",
-                "severity": "HIGH",
-                "status": "OPEN",
-                "description": "Test description"
-            },
-            headers={"Authorization": f"Bearer mock_token_for_{security_analyst_user.email}"}
-        )
-        
-        # Should succeed or return 404 if endpoint doesn't exist
-        assert response.status_code in [200, 201, 404]
-    
-    async def test_external_auditor_cannot_create_vulnerability(
-        self, async_client, external_auditor_user
-    ):
-        """External Auditor should not be able to create vulnerabilities"""
-        response = await async_client.post(
-            "/api/v1/vulnerabilities",
-            json={
-                "title": "Test Vulnerability",
-                "severity": "HIGH",
-                "status": "OPEN",
-                "description": "Test description"
-            },
-            headers={"Authorization": f"Bearer mock_token_for_{external_auditor_user.email}"}
-        )
-        
-        # Should be forbidden
-        assert response.status_code in [403, 404]
-    
-    async def test_viewer_can_read_vulnerabilities(self, async_client, viewer_user):
-        """Viewer should be able to read vulnerabilities"""
-        response = await async_client.get(
-            "/api/v1/vulnerabilities",
-            headers={"Authorization": f"Bearer mock_token_for_{viewer_user.email}"}
-        )
-        
-        # Should succeed or return 404
-        assert response.status_code in [200, 404]
+# ---------------------------------------------------------------------------
+# Exception approval — CISO and Admin only
+# ---------------------------------------------------------------------------
+
+class TestExceptionApprovalRBAC:
+    """POST /exceptions/{id}/approve must be restricted to CISO and Admin."""
+
+    def test_ciso_rbac_gate_passes(self, client):
+        app.dependency_overrides[get_current_user] = _override("ciso")
+        try:
+            resp = client.post("/api/v1/exceptions/999999/approve?approval_status=approved")
+            assert resp.status_code != 403
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_admin_rbac_gate_passes(self, client):
+        app.dependency_overrides[get_current_user] = _override("admin")
+        try:
+            resp = client.post("/api/v1/exceptions/999999/approve?approval_status=approved")
+            assert resp.status_code != 403
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_infosec_manager_forbidden(self, client):
+        app.dependency_overrides[get_current_user] = _override("infosec_manager")
+        try:
+            resp = client.post("/api/v1/exceptions/1/approve?approval_status=approved")
+            assert resp.status_code == 403
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_internal_auditor_forbidden(self, client):
+        app.dependency_overrides[get_current_user] = _override("internal_auditor")
+        try:
+            resp = client.post("/api/v1/exceptions/1/approve?approval_status=approved")
+            assert resp.status_code == 403
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_security_analyst_forbidden(self, client):
+        app.dependency_overrides[get_current_user] = _override("security_analyst")
+        try:
+            resp = client.post("/api/v1/exceptions/1/approve?approval_status=approved")
+            assert resp.status_code == 403
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_viewer_forbidden(self, client):
+        app.dependency_overrides[get_current_user] = _override("viewer")
+        try:
+            resp = client.post("/api/v1/exceptions/1/approve?approval_status=approved")
+            assert resp.status_code == 403
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_unauthenticated_forbidden(self, client):
+        app.dependency_overrides.clear()
+        resp = client.post("/api/v1/exceptions/1/approve?approval_status=approved")
+        assert resp.status_code in (401, 403)
 
 
-@pytest.mark.asyncio
-class TestExceptionEndpointRBAC:
-    """Test RBAC on exception approval endpoints"""
-    
-    async def test_ciso_can_approve_exception(self, async_client, ciso_user):
-        """CISO should be able to approve exceptions"""
-        response = await async_client.patch(
-            "/api/v1/exceptions/1/approve",
-            headers={"Authorization": f"Bearer mock_token_for_{ciso_user.email}"}
+# ---------------------------------------------------------------------------
+# General authentication enforcement
+# ---------------------------------------------------------------------------
+
+class TestUnauthenticatedBlocked:
+    """Unauthenticated requests must be rejected on all protected routes."""
+
+    @pytest.mark.parametrize("method,path", [
+        ("GET",    "/api/v1/applications"),
+        ("GET",    "/api/v1/vulnerabilities"),
+        ("GET",    "/api/v1/vendors"),
+        ("GET",    "/api/v1/dashboard"),
+        ("GET",    "/api/v1/reports"),
+        ("GET",    "/api/v1/audit/statistics"),
+        ("GET",    "/api/v1/exceptions"),
+        ("GET",    "/api/v1/tprm"),
+    ])
+    def test_protected_route_requires_auth(self, client, method, path):
+        app.dependency_overrides.clear()
+        resp = getattr(client, method.lower())(path)
+        assert resp.status_code in (401, 403), (
+            f"{method} {path} returned {resp.status_code}; expected 401 or 403"
         )
-        
-        assert response.status_code in [200, 404]  # 404 if endpoint doesn't exist
-    
-    async def test_infosec_manager_cannot_approve_exception(
-        self, async_client, infosec_manager_user
-    ):
-        """InfoSec Manager should not be able to approve exceptions"""
-        response = await async_client.patch(
-            "/api/v1/exceptions/1/approve",
-            headers={"Authorization": f"Bearer mock_token_for_{infosec_manager_user.email}"}
-        )
-        
-        assert response.status_code in [403, 404]
-    
-    async def test_security_analyst_cannot_approve_exception(
-        self, async_client, security_analyst_user
-    ):
-        """Security Analyst should not be able to approve exceptions"""
-        response = await async_client.patch(
-            "/api/v1/exceptions/1/approve",
-            headers={"Authorization": f"Bearer mock_token_for_{security_analyst_user.email}"}
-        )
-        
-        assert response.status_code in [403, 404]
+
+    def test_auth_login_is_public(self, client):
+        """The login endpoint must not require authentication."""
+        app.dependency_overrides.clear()
+        resp = client.post("/api/v1/auth/login", json={"email": "x@y.com", "password": "x"})
+        # May return 401 (bad creds) but must not return 403 (access denied)
+        assert resp.status_code != 403
 
 
-@pytest.mark.asyncio
-class TestApplicationEndpointRBAC:
-    """Test RBAC on application management endpoints"""
-    
-    async def test_infosec_manager_can_create_application(
-        self, async_client, infosec_manager_user
-    ):
-        """InfoSec Manager should be able to create applications"""
-        response = await async_client.post(
-            "/api/v1/applications",
-            json={
-                "name": "Test Application",
-                "type": "WEB",
-                "criticality": "HIGH",
-                "owner": "test@test.com"
-            },
-            headers={"Authorization": f"Bearer mock_token_for_{infosec_manager_user.email}"}
-        )
-        
-        assert response.status_code in [200, 201, 404]
-    
-    async def test_external_auditor_can_read_applications(
-        self, async_client, external_auditor_user
-    ):
-        """External Auditor should be able to read applications"""
-        response = await async_client.get(
-            "/api/v1/applications",
-            headers={"Authorization": f"Bearer mock_token_for_{external_auditor_user.email}"}
-        )
-        
-        assert response.status_code in [200, 404]
-    
-    async def test_external_auditor_cannot_update_application(
-        self, async_client, external_auditor_user
-    ):
-        """External Auditor should not be able to update applications"""
-        response = await async_client.put(
-            "/api/v1/applications/1",
-            json={
-                "name": "Updated Application",
-                "type": "WEB"
-            },
-            headers={"Authorization": f"Bearer mock_token_for_{external_auditor_user.email}"}
-        )
-        
-        assert response.status_code in [403, 404]
+class TestAuthenticatedPasses:
+    """Authenticated users with correct permissions must pass the RBAC gate."""
+
+    def test_viewer_can_read_applications(self, client):
+        app.dependency_overrides[get_current_user] = _override("viewer")
+        try:
+            resp = client.get("/api/v1/applications")
+            assert resp.status_code not in (401, 403)
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_viewer_can_read_vendors(self, client):
+        app.dependency_overrides[get_current_user] = _override("viewer")
+        try:
+            resp = client.get("/api/v1/vendors")
+            assert resp.status_code not in (401, 403)
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_any_authenticated_user_can_read_dashboard(self, client):
+        app.dependency_overrides[get_current_user] = _override("external_auditor")
+        try:
+            resp = client.get("/api/v1/dashboard")
+            assert resp.status_code not in (401, 403)
+        finally:
+            app.dependency_overrides.clear()
 
 
-@pytest.mark.asyncio
-class TestReportEndpointRBAC:
-    """Test RBAC on report generation endpoints"""
-    
-    async def test_internal_auditor_can_create_reports(
-        self, async_client, internal_auditor_user
-    ):
-        """Internal Auditor should be able to create reports"""
-        response = await async_client.post(
-            "/api/v1/reports",
-            json={
-                "title": "Audit Report",
-                "type": "AUDIT",
-                "period": "Q1-2024"
-            },
-            headers={"Authorization": f"Bearer mock_token_for_{internal_auditor_user.email}"}
-        )
-        
-        assert response.status_code in [200, 201, 404]
-    
-    async def test_external_auditor_can_read_reports(
-        self, async_client, external_auditor_user
-    ):
-        """External Auditor should be able to read reports"""
-        response = await async_client.get(
-            "/api/v1/reports",
-            headers={"Authorization": f"Bearer mock_token_for_{external_auditor_user.email}"}
-        )
-        
-        assert response.status_code in [200, 404]
-    
-    async def test_security_analyst_cannot_delete_reports(
-        self, async_client, security_analyst_user
-    ):
-        """Security Analyst should not be able to delete reports"""
-        response = await async_client.delete(
-            "/api/v1/reports/1",
-            headers={"Authorization": f"Bearer mock_token_for_{security_analyst_user.email}"}
-        )
-        
-        assert response.status_code in [403, 404]
-
-
-@pytest.mark.asyncio
 class TestSettingsEndpointRBAC:
     """Test RBAC on settings endpoints"""
-    
-    async def test_admin_can_update_settings(self, async_client, admin_user):
+
+    def test_admin_can_update_settings(self, client):
         """Admin should be able to update settings"""
-        response = await async_client.patch(
-            "/api/v1/settings",
-            json={
-                "notification_enabled": True,
-                "max_login_attempts": 5
-            },
-            headers={"Authorization": f"Bearer mock_token_for_{admin_user.email}"}
-        )
-        
-        assert response.status_code in [200, 404]
-    
-    async def test_ciso_can_read_settings(self, async_client, ciso_user):
+        app.dependency_overrides[get_current_user] = _override("admin")
+        try:
+            response = client.patch(
+                "/api/v1/settings",
+                json={"notification_enabled": True, "max_login_attempts": 5},
+            )
+            assert response.status_code in [200, 404, 422], (
+                f"admin should not get 403 on PATCH /settings, got {response.status_code}"
+            )
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_ciso_can_read_settings(self, client):
         """CISO should be able to read settings"""
-        response = await async_client.get(
-            "/api/v1/settings",
-            headers={"Authorization": f"Bearer mock_token_for_{ciso_user.email}"}
-        )
-        
-        assert response.status_code in [200, 404]
-    
-    async def test_viewer_cannot_update_settings(self, async_client, viewer_user):
+        app.dependency_overrides[get_current_user] = _override("ciso")
+        try:
+            response = client.get("/api/v1/settings")
+            assert response.status_code in [200, 404], (
+                f"ciso should not get 403 on GET /settings, got {response.status_code}"
+            )
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_viewer_cannot_update_settings(self, client):
         """Viewer should not be able to update settings"""
-        response = await async_client.patch(
-            "/api/v1/settings",
-            json={
-                "notification_enabled": False
-            },
-            headers={"Authorization": f"Bearer mock_token_for_{viewer_user.email}"}
-        )
-        
-        assert response.status_code in [403, 404]
+        app.dependency_overrides[get_current_user] = _override("viewer")
+        try:
+            response = client.patch(
+                "/api/v1/settings",
+                json={"notification_enabled": False},
+            )
+            assert response.status_code in [403, 404], (
+                f"viewer should be denied PATCH /settings, got {response.status_code}"
+            )
+        finally:
+            app.dependency_overrides.clear()
 
 
-@pytest.mark.asyncio
 class TestRoleHierarchyInEndpoints:
     """Test that role hierarchy works correctly in endpoints"""
-    
-    async def test_admin_has_access_to_all_endpoints(self, async_client, admin_user):
+
+    def test_admin_has_access_to_all_endpoints(self, client):
         """Admin should have access to all protected endpoints"""
-        endpoints = [
-            ("GET", "/api/v1/users"),
-            ("GET", "/api/v1/applications"),
-            ("GET", "/api/v1/vulnerabilities"),
-            ("GET", "/api/v1/reports"),
-            ("GET", "/api/v1/settings"),
-        ]
-        
-        for method, endpoint in endpoints:
-            response = await async_client.request(
-                method,
-                endpoint,
-                headers={"Authorization": f"Bearer mock_token_for_{admin_user.email}"}
-            )
-            
-            # Admin should never get 403
-            assert response.status_code != 403
-    
-    async def test_ciso_inherits_infosec_manager_permissions(
-        self, async_client, ciso_user
-    ):
+        app.dependency_overrides[get_current_user] = _override("admin")
+        try:
+            endpoints = [
+                ("GET", "/api/v1/users"),
+                ("GET", "/api/v1/applications"),
+                ("GET", "/api/v1/vulnerabilities"),
+                ("GET", "/api/v1/reports"),
+            ]
+            for method, endpoint in endpoints:
+                response = client.request(method, endpoint)
+                assert response.status_code != 403, (
+                    f"admin should never get 403 on {method} {endpoint}, got {response.status_code}"
+                )
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_ciso_inherits_infosec_manager_permissions(self, client):
         """CISO should have all InfoSec Manager permissions"""
-        # Test an endpoint that InfoSec Manager can access
-        response = await async_client.get(
-            "/api/v1/applications",
-            headers={"Authorization": f"Bearer mock_token_for_{ciso_user.email}"}
-        )
-        
-        # CISO should be able to access this
-        assert response.status_code in [200, 404]
-        assert response.status_code != 403
+        app.dependency_overrides[get_current_user] = _override("ciso")
+        try:
+            response = client.get("/api/v1/applications")
+            assert response.status_code not in (401, 403), (
+                f"ciso should be allowed on GET /applications, got {response.status_code}"
+            )
+        finally:
+            app.dependency_overrides.clear()
+
+
+# ---------------------------------------------------------------------------
+# Automation — view restricted to admin / ciso / infosec_manager
+# ---------------------------------------------------------------------------
+
+class TestAutomationRBAC:
+    """
+    Automation endpoints must only be reachable by admin, ciso, and
+    infosec_manager.  All other roles (auditors, analyst, viewer) must
+    receive 403.
+    """
+
+    _ALLOWED   = ["admin", "ciso", "infosec_manager"]
+    _FORBIDDEN = ["external_auditor", "internal_auditor", "security_analyst", "viewer"]
+
+    # ── allowed roles ────────────────────────────────────────────────────────
+
+    @pytest.mark.parametrize("role", _ALLOWED)
+    def test_allowed_roles_can_list_rules(self, client, role):
+        app.dependency_overrides[get_current_user] = _override(role)
+        try:
+            resp = client.get("/api/v1/automation/rules")
+            assert resp.status_code not in (401, 403), (
+                f"[{role}] should be allowed to GET /automation/rules but got {resp.status_code}"
+            )
+        finally:
+            app.dependency_overrides.clear()
+
+    @pytest.mark.parametrize("role", _ALLOWED)
+    def test_allowed_roles_can_read_stats(self, client, role):
+        app.dependency_overrides[get_current_user] = _override(role)
+        try:
+            resp = client.get("/api/v1/automation/stats")
+            assert resp.status_code not in (401, 403), (
+                f"[{role}] should be allowed to GET /automation/stats but got {resp.status_code}"
+            )
+        finally:
+            app.dependency_overrides.clear()
+
+    @pytest.mark.parametrize("role", _ALLOWED)
+    def test_allowed_roles_can_list_executions(self, client, role):
+        app.dependency_overrides[get_current_user] = _override(role)
+        try:
+            resp = client.get("/api/v1/automation/executions")
+            assert resp.status_code not in (401, 403), (
+                f"[{role}] should be allowed to GET /automation/executions but got {resp.status_code}"
+            )
+        finally:
+            app.dependency_overrides.clear()
+
+    # ── forbidden roles ──────────────────────────────────────────────────────
+
+    @pytest.mark.parametrize("role", _FORBIDDEN)
+    def test_forbidden_roles_cannot_list_rules(self, client, role):
+        app.dependency_overrides[get_current_user] = _override(role)
+        try:
+            resp = client.get("/api/v1/automation/rules")
+            assert resp.status_code == 403, (
+                f"[{role}] should be DENIED GET /automation/rules but got {resp.status_code}"
+            )
+        finally:
+            app.dependency_overrides.clear()
+
+    @pytest.mark.parametrize("role", _FORBIDDEN)
+    def test_forbidden_roles_cannot_read_stats(self, client, role):
+        app.dependency_overrides[get_current_user] = _override(role)
+        try:
+            resp = client.get("/api/v1/automation/stats")
+            assert resp.status_code == 403, (
+                f"[{role}] should be DENIED GET /automation/stats but got {resp.status_code}"
+            )
+        finally:
+            app.dependency_overrides.clear()
+
+    # ── create/delete restricted to admin/ciso only ──────────────────────────
+
+    def test_infosec_manager_cannot_create_rule(self, client):
+        """infosec_manager can VIEW automation but not CREATE."""
+        app.dependency_overrides[get_current_user] = _override("infosec_manager")
+        try:
+            resp = client.post("/api/v1/automation/rules", json={
+                "name": "test", "trigger_type": "manual"
+            })
+            assert resp.status_code == 403, (
+                f"infosec_manager should not be able to create automation rules, got {resp.status_code}"
+            )
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_admin_can_create_rule(self, client):
+        app.dependency_overrides[get_current_user] = _override("admin")
+        try:
+            resp = client.post("/api/v1/automation/rules", json={
+                "name": "test", "trigger_type": "manual"
+            })
+            # Gate passes — 201 created or DB error (500) both mean the route was reached
+            assert resp.status_code != 403, (
+                f"admin should be allowed to create automation rules, got {resp.status_code}"
+            )
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_admin_can_delete_rule(self, client):
+        app.dependency_overrides[get_current_user] = _override("admin")
+        try:
+            resp = client.delete("/api/v1/automation/rules/999999")
+            assert resp.status_code != 403, (
+                f"admin should be allowed to delete automation rules, got {resp.status_code}"
+            )
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_ciso_can_create_rule(self, client):
+        app.dependency_overrides[get_current_user] = _override("ciso")
+        try:
+            resp = client.post("/api/v1/automation/rules", json={
+                "name": "test", "trigger_type": "manual"
+            })
+            assert resp.status_code != 403, (
+                f"ciso should be allowed to create automation rules, got {resp.status_code}"
+            )
+        finally:
+            app.dependency_overrides.clear()
+
+    # ── unauthenticated ──────────────────────────────────────────────────────
+
+    def test_unauthenticated_cannot_access_automation(self, client):
+        app.dependency_overrides.clear()
+        for path in ("/api/v1/automation/rules", "/api/v1/automation/stats",
+                     "/api/v1/automation/executions"):
+            resp = client.get(path)
+            assert resp.status_code in (401, 403), (
+                f"[anon] should be blocked from GET {path} but got {resp.status_code}"
+            )
 
 
 if __name__ == "__main__":

@@ -1,0 +1,105 @@
+# RiskTrix Microservices - Docker Environment Configuration
+# DO NOT COMMIT - SENSITIVE DATA
+
+# Environment files with credentials
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+
+# Docker compose override files with credentials
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Database backups and dumps
+*.sql
+*.sql.gz
+*.dump
+
+# Logs
+*.log
+logs/
+*/logs/
+
+# Local development files
+.DS_Store
+.vscode/settings.json
+*.swp
+*.swo
+*~
+.idea/
+
+# Build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Node modules and build outputs
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+.cache/
+.next/
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Upload directories (development)
+uploads/
+tmp/
+temp/
+
+# Redis dumps
+dump.rdb
+
+# PostgreSQL
+data/
+
+# Keep .env.example and .gitignore
+!.env.example
+!.gitignore

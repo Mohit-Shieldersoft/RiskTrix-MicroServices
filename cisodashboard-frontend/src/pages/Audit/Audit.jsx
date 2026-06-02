@@ -25,6 +25,7 @@ import { getUserProfile } from "../../utils/auth";
 import dashboardTheme from "../../theme/dashboardTheme";
 import Toast from "../../components/common/Toast";
 import { useToast } from "../../components/common/useToast";
+import { hasPermission } from "../../utils/permissions";
 import "./Audit.css";
 
 const Audit = () => {
@@ -187,47 +188,51 @@ const Audit = () => {
       >
         <Grid>
           <Grow in={!loading} timeout={600}>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<AddAlertIcon />}
-              onClick={() => setIsAddExpiryModalOpen(true)}
-              sx={{
-                background: "linear-gradient(45deg, #3f51b5 30%, #536dfe 90%)",
-                boxShadow: "0 5px 10px rgba(63, 81, 181, 0.3)",
-                transition: "all 0.3s",
-                fontWeight: "bold",
-                "&:hover": {
-                  boxShadow: "0 8px 16px rgba(63, 81, 181, 0.4)",
-                  transform: "translateY(-2px)",
-                },
-              }}
-            >
-              Add Expiry
-            </Button>
+            {hasPermission("audit", "create") ? (
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<AddAlertIcon />}
+                onClick={() => setIsAddExpiryModalOpen(true)}
+                sx={{
+                  background: "linear-gradient(45deg, #3f51b5 30%, #536dfe 90%)",
+                  boxShadow: "0 5px 10px rgba(63, 81, 181, 0.3)",
+                  transition: "all 0.3s",
+                  fontWeight: "bold",
+                  "&:hover": {
+                    boxShadow: "0 8px 16px rgba(63, 81, 181, 0.4)",
+                    transform: "translateY(-2px)",
+                  },
+                }}
+              >
+                Add Expiry
+              </Button>
+            ) : <span />}
           </Grow>
         </Grid>
 
         <Grid>
           <Grow in={!loading} timeout={800}>
-            <Button
-              variant="contained"
-              color="secondary"
-              startIcon={<BusinessIcon />}
-              onClick={() => setIsAddVendorModalOpen(true)}
-              sx={{
-                background: "linear-gradient(45deg, #f50057 30%, #ff4081 90%)",
-                boxShadow: "0 5px 10px rgba(245, 0, 87, 0.3)",
-                transition: "all 0.3s",
-                fontWeight: "bold",
-                "&:hover": {
-                  boxShadow: "0 8px 16px rgba(245, 0, 87, 0.4)",
-                  transform: "translateY(-2px)",
-                },
-              }}
-            >
-              Add Vendor
-            </Button>
+            {hasPermission("audit", "create") ? (
+              <Button
+                variant="contained"
+                color="secondary"
+                startIcon={<BusinessIcon />}
+                onClick={() => setIsAddVendorModalOpen(true)}
+                sx={{
+                  background: "linear-gradient(45deg, #f50057 30%, #ff4081 90%)",
+                  boxShadow: "0 5px 10px rgba(245, 0, 87, 0.3)",
+                  transition: "all 0.3s",
+                  fontWeight: "bold",
+                  "&:hover": {
+                    boxShadow: "0 8px 16px rgba(245, 0, 87, 0.4)",
+                    transform: "translateY(-2px)",
+                  },
+                }}
+              >
+                Add Vendor
+              </Button>
+            ) : <span />}
           </Grow>
         </Grid>
 

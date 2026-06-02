@@ -39,6 +39,17 @@ async def lifespan(app: FastAPI):
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"API Version: {settings.API_VERSION}")
     
+    # Create automation tables (idempotent — safe to run every startup)
+    try:
+        from app.db.session import engine
+        from app.modules.automation.api.automation import AutomationRule, AutomationExecution
+        from app.db.session import Base
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("✅ Automation tables ensured")
+    except Exception as e:
+        logger.error(f"❌ Failed to create automation tables: {e}")
+
     # Register event handlers
     try:
         register_activity_log_handlers()

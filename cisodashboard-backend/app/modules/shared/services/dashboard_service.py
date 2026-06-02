@@ -11,6 +11,7 @@ from app.schemas.dashboard import (
     DelayedVulnerabilityTimeFrame, VulnerabilityStatus as VulnerabilityStatusSchema,
     ApplicationTypeVulnerabilities, DetailedVulnerabilityBreakdown
 )
+from app.models.models import Vulnerability
 
 logger = logging.getLogger(__name__)
 

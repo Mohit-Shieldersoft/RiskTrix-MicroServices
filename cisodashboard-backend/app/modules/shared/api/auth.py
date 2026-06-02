@@ -61,6 +61,37 @@ async def admin_required(user=Depends(get_current_user)):
     return user
 
 
+def require_roles(*allowed_roles: str):
+    """
+    Dependency factory — returns a FastAPI dependency that raises 403 unless the
+    authenticated user's role is in the *allowed_roles* list.
+
+    Usage in api.py:
+        from app.modules.shared.api.auth import get_current_user, require_roles
+        api_router.include_router(
+            automation.router,
+            prefix="/automation",
+            dependencies=[Depends(get_current_user), Depends(require_roles("admin","ciso","infosec_manager"))],
+        )
+    """
+    allowed_lower = {r.lower() for r in allowed_roles}
+
+    async def _check(user=Depends(get_current_user)):
+        try:
+            role_val = user.role.value if hasattr(user.role, 'value') else user.role
+        except Exception:
+            role_val = getattr(user, 'role', None)
+
+        if not role_val or str(role_val).lower() not in allowed_lower:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access restricted. Required roles: {', '.join(sorted(allowed_lower))}",
+            )
+        return user
+
+    return _check
+
+
 @router.post("/login", response_model=TokenResponse)
 async def login(payload: LoginRequest, db: AsyncSession = Depends(get_session)):
     """Authenticate user with email/username and password, return access + refresh tokens"""
@@ -140,11 +171,26 @@ async def refresh_token(body: RefreshRequest, db: AsyncSession = Depends(get_ses
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
     role_val = user.role.value if hasattr(user.role, "value") else user.role
-    new_access = security_manager.create_access_token({"sub": str(user.id), "email": user.email, "roles": [role_val]})
+    token_data = {"sub": str(user.id), "email": user.email, "roles": [role_val]}
+    new_access = security_manager.create_access_token(token_data)
+    new_refresh = security_manager.create_refresh_token(token_data)
 
-    new_refresh = security_manager.create_refresh_token({"sub": str(user.id), "email": user.email, "roles": [role_val]})
+    user_profile = {
+        "id": user.id,
+        "email": user.email,
+        "username": user.username,
+        "full_name": user.full_name,
+        "role": role_val,
+        "profile_type": getattr(user, "profile_type", None),
+        "privilege_level": getattr(user, "privilege_level", None),
+        "clearance_level": getattr(user, "clearance_level", None),
+        "company": getattr(user, "company", None),
+        "phone": getattr(user, "phone", None),
+        "department": getattr(user, "department", None),
+        "is_active": user.is_active,
+    }
 
-    return {"access_token": new_access, "refresh_token": new_refresh}
+    return {"access_token": new_access, "refresh_token": new_refresh, "user": user_profile}
 
 
 @router.post("/logout")

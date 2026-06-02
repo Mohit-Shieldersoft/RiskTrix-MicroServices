@@ -4,6 +4,7 @@ import {
   Box,
   CssBaseline,
   IconButton,
+  InputBase,
   Toolbar,
   Typography,
   useMediaQuery,
@@ -11,6 +12,7 @@ import {
   Badge,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import SearchIcon from "@mui/icons-material/Search";
 import Sidebar from "../Navigation/Sidebar";
 import dashboardTheme from "../../theme/dashboardTheme";
 import NotificationPanel from "../NotificationPanel/NotificationPanel";
@@ -19,10 +21,20 @@ import { useNavigate } from "react-router-dom";
 
 const MainLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchQ, setSearchQ] = useState("");
   const theme = useTheme();
+  const navigate = useNavigate();
 
   const handleSidebarToggle = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchQ.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQ.trim())}`);
+      setSearchQ("");
+    }
   };
 
   return (
@@ -72,6 +84,35 @@ const MainLayout = ({ children }) => {
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             {" "}
             {/* Added alignItems */}
+            {/* Global search bar */}
+            <Box
+              component="form"
+              onSubmit={handleSearchSubmit}
+              sx={{
+                display: { xs: "none", sm: "flex" },
+                alignItems: "center",
+                bgcolor: "rgba(255,255,255,0.15)",
+                borderRadius: 2,
+                px: 1.5,
+                py: 0.3,
+                mr: 1,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.22)" },
+              }}
+            >
+              <SearchIcon sx={{ fontSize: 18, color: "rgba(255,255,255,0.8)", mr: 0.5 }} />
+              <InputBase
+                placeholder="Quick search…"
+                value={searchQ}
+                onChange={(e) => setSearchQ(e.target.value)}
+                sx={{
+                  color: "white",
+                  fontSize: 13,
+                  width: 180,
+                  "& ::placeholder": { color: "rgba(255,255,255,0.7)" },
+                }}
+                inputProps={{ "aria-label": "global search" }}
+              />
+            </Box>
             {/* Add the NotificationPanel component */}
             <NotificationPanel />
             <UserMenu />

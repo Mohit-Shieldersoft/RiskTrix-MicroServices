@@ -1,9 +1,12 @@
-# Micro-CISO Microservices Architecture
-# Phase 7: Docker Compose for Application and Audit Services
-version: "3.8"
+# RiskTrix Microservices Architecture
+# Complete Docker Compose with all 12 services, automatic database migrations, and infrastructure
 
 services:
-  # PostgreSQL Database (Shared during transition)
+  # ============================================================================
+  # INFRASTRUCTURE SERVICES
+  # ============================================================================
+
+  # PostgreSQL Database (Shared across all services during transition)
   postgres:
     image: postgres:15-alpine
     container_name: micro-ciso-postgres
@@ -21,8 +24,8 @@ services:
       - micro-ciso-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d risktrix_db"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 5
       start_period: 10s
 
@@ -40,12 +43,62 @@ services:
       - micro-ciso-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 3
       start_period: 5s
 
-  # Application Service (Phase 5)
+  # ============================================================================
+  # PRIMARY BACKEND SERVICES
+  # ============================================================================
+
+  # CISO Dashboard Backend (Port 8000) - Main backend with Alembic migrations
+  cisodashboard-backend:
+    build:
+      context: ./cisodashboard-backend
+      dockerfile: Dockerfile
+    container_name: cisodashboard-backend
+    restart: unless-stopped
+    environment:
+      # Service Config
+      PORT: 8000
+      ENVIRONMENT: development
+
+      # Database
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: risktrix_db
+      DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/risktrix_db
+
+      # Redis
+      REDIS_URL: redis://redis:6379
+
+      # Security
+      SECRET_KEY: your-super-secret-key-change-in-production
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 480
+
+      # Logging
+      LOG_LEVEL: INFO
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./cisodashboard-backend/uploads:/app/uploads
+      - ./cisodashboard-backend/logs:/app/logs
+      - ./cisodashboard-backend/migrations:/app/migrations
+    networks:
+      - micro-ciso-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+
+  # Application Service (Port 8001)
   application-service:
     build:
       context: ./application-service
@@ -92,7 +145,7 @@ services:
       retries: 3
       start_period: 40s
 
-  # Audit Service (Phase 6)
+  # Audit Service (Port 8002)
   audit-service:
     build:
       context: ./audit-service
@@ -142,7 +195,355 @@ services:
       retries: 3
       start_period: 40s
 
-  # API Gateway (Nginx) - Routes frontend requests to microservices
+  # ============================================================================
+  # MICROSERVICES
+  # ============================================================================
+
+  # Asset Service (Port 8003)
+  asset-service:
+    build:
+      context: ./asset-service
+      dockerfile: Dockerfile
+    container_name: asset-service
+    restart: unless-stopped
+    environment:
+      PORT: 8003
+      ENVIRONMENT: development
+
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: risktrix_db
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/risktrix_db
+
+      REDIS_URL: redis://redis:6379
+
+      SECRET_KEY: your-super-secret-key-change-in-production
+      LOG_LEVEL: INFO
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./asset-service/uploads:/app/uploads
+    networks:
+      - micro-ciso-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Ticket Service (Port 8004)
+  ticket-service:
+    build:
+      context: ./ticket-service
+      dockerfile: Dockerfile
+    container_name: ticket-service
+    restart: unless-stopped
+    environment:
+      PORT: 8004
+      ENVIRONMENT: development
+
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: risktrix_db
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/risktrix_db
+
+      REDIS_URL: redis://redis:6379
+
+      SECRET_KEY: your-super-secret-key-change-in-production
+      LOG_LEVEL: INFO
+    ports:
+      - "8004:8004"
+    volumes:
+      - ./ticket-service/uploads:/app/uploads
+    networks:
+      - micro-ciso-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+
+  # Directory Service (Port 8005)
+  directory-service:
+    build:
+      context: ./directory-service
+      dockerfile: Dockerfile
+    container_name: directory-service
+    restart: unless-stopped
+    environment:
+      PORT: 8005
+      ENVIRONMENT: development
+
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: risktrix_db
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/risktrix_db
+
+      REDIS_URL: redis://redis:6379
+
+      SECRET_KEY: your-super-secret-key-change-in-production
+      LOG_LEVEL: INFO
+    ports:
+      - "8005:8005"
+    networks:
+      - micro-ciso-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Policy Service (Port 8006)
+  policy-service:
+    build:
+      context: ./policy-service
+      dockerfile: Dockerfile
+    container_name: policy-service
+    restart: unless-stopped
+    environment:
+      PORT: 8006
+      ENVIRONMENT: development
+
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: risktrix_db
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/risktrix_db
+
+      REDIS_URL: redis://redis:6379
+
+      SECRET_KEY: your-super-secret-key-change-in-production
+      LOG_LEVEL: INFO
+    ports:
+      - "8006:8006"
+    volumes:
+      - ./policy-service/uploads:/app/uploads
+    networks:
+      - micro-ciso-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+
+  # File Service (Port 8007)
+  file-service:
+    build:
+      context: ./file-service
+      dockerfile: Dockerfile
+    container_name: file-service
+    restart: unless-stopped
+    environment:
+      PORT: 8007
+      ENVIRONMENT: development
+
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: risktrix_db
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/risktrix_db
+
+      REDIS_URL: redis://redis:6379
+
+      SECRET_KEY: your-super-secret-key-change-in-production
+      LOG_LEVEL: INFO
+    ports:
+      - "8007:8007"
+    volumes:
+      - ./file-service/uploads:/app/uploads
+    networks:
+      - micro-ciso-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Notification Service (Port 8008)
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    restart: unless-stopped
+    environment:
+      PORT: 8008
+      ENVIRONMENT: development
+
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: risktrix_db
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/risktrix_db
+
+      REDIS_URL: redis://redis:6379
+
+      SECRET_KEY: your-super-secret-key-change-in-production
+      LOG_LEVEL: INFO
+    ports:
+      - "8008:8008"
+    networks:
+      - micro-ciso-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Queue Service (Port 8009)
+  queue-service:
+    build:
+      context: ./queue-service
+      dockerfile: Dockerfile
+    container_name: queue-service
+    restart: unless-stopped
+    environment:
+      PORT: 8009
+      ENVIRONMENT: development
+
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: risktrix_db
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/risktrix_db
+
+      REDIS_URL: redis://redis:6379
+
+      SECRET_KEY: your-super-secret-key-change-in-production
+      LOG_LEVEL: INFO
+    ports:
+      - "8009:8009"
+    networks:
+      - micro-ciso-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8009/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Search Service (Port 8010)
+  search-service:
+    build:
+      context: ./search-service
+      dockerfile: Dockerfile
+    container_name: search-service
+    restart: unless-stopped
+    environment:
+      PORT: 8010
+      ENVIRONMENT: development
+
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: risktrix_db
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/risktrix_db
+
+      REDIS_URL: redis://redis:6379
+
+      SECRET_KEY: your-super-secret-key-change-in-production
+      LOG_LEVEL: INFO
+    ports:
+      - "8010:8010"
+    networks:
+      - micro-ciso-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ============================================================================
+  # FRONTEND SERVICES
+  # ============================================================================
+
+  # CISO Dashboard Frontend (Port 8888) - React + Vite
+  cisodashboard-frontend:
+    build:
+      context: ./cisodashboard-frontend
+      dockerfile: Dockerfile
+    container_name: cisodashboard-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 8888
+      VITE_API_URL: http://localhost:8000
+      VITE_API_BASE_URL: http://cisodashboard-backend:8000
+      VITE_APPLICATION_SERVICE_URL: http://application-service:8001
+      VITE_AUDIT_SERVICE_URL: http://audit-service:8002
+      VITE_ASSET_SERVICE_URL: http://asset-service:8003
+      VITE_TICKET_SERVICE_URL: http://ticket-service:8004
+      VITE_DIRECTORY_SERVICE_URL: http://directory-service:8005
+      VITE_POLICY_SERVICE_URL: http://policy-service:8006
+      VITE_FILE_SERVICE_URL: http://file-service:8007
+      VITE_NOTIFICATION_SERVICE_URL: http://notification-service:8008
+      VITE_QUEUE_SERVICE_URL: http://queue-service:8009
+      VITE_SEARCH_SERVICE_URL: http://search-service:8010
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./cisodashboard-frontend/src:/app/src
+      - ./cisodashboard-frontend/public:/app/public
+    networks:
+      - micro-ciso-network
+    depends_on:
+      - cisodashboard-backend
+
+  # ============================================================================
+  # API GATEWAY
+  # ============================================================================
+
+  # API Gateway (Nginx) - Routes requests to microservices
   api-gateway:
     image: nginx:alpine
     container_name: micro-ciso-gateway
@@ -154,24 +555,18 @@ services:
     networks:
       - micro-ciso-network
     depends_on:
+      - cisodashboard-backend
       - application-service
       - audit-service
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--quiet",
-          "--tries=1",
-          "--spider",
-          "http://localhost/health",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    profiles:
-      - gateway
+      - asset-service
+      - ticket-service
+      - directory-service
+      - policy-service
+      - file-service
+      - notification-service
+      - queue-service
+      - search-service
+      - cisodashboard-frontend
 
 networks:
   micro-ciso-network:

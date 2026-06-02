@@ -26,6 +26,7 @@ import {
   InputAdornment,
   CircularProgress,
   Stack,
+  Alert,
 } from "@mui/material";
 import Toast from "../../components/common/Toast";
 import { useToast } from "../../components/common/useToast";
@@ -203,6 +204,11 @@ const AdminUsers = () => {
     setFormError("");
     try {
       const payload = { ...form };
+      payload.role = payload.role.toLowerCase(); // backend expects lowercase enum values
+      // Auto-generate username from email prefix if left blank (username is UNIQUE NOT NULL)
+      if (!payload.username && payload.email) {
+        payload.username = payload.email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "_");
+      }
       if (!payload.password) delete payload.password; // omit if blank (update)
 
       if (editingId) {
@@ -558,6 +564,7 @@ const AdminUsers = () => {
                 label="Username"
                 size="small"
                 fullWidth
+                placeholder="Auto-generated from email"
                 value={form.username}
                 onChange={(e) => handleFormChange("username", e.target.value)}
               />

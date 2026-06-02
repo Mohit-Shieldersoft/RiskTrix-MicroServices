@@ -4,7 +4,8 @@ Role-Based Access Control (RBAC) utilities and decorators
 from functools import wraps
 from typing import List, Callable
 from fastapi import HTTPException, status, Depends
-from app.models.models import User, UserRole
+from app.schemas.auth import CurrentUser as User
+from app.models.user import UserRole
 
 
 # Define role hierarchy - higher roles inherit lower role permissions

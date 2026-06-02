@@ -6,11 +6,11 @@ import { getToken } from "./auth";
 
 // Microservice base URLs
 const APPLICATION_SERVICE_URL =
-  import.meta.env.VITE_APPLICATION_SERVICE_URL || "http://localhost:8001";
+  import.meta.env.VITE_APPLICATION_SERVICE_URL || "/";
 const AUDIT_SERVICE_URL =
-  import.meta.env.VITE_AUDIT_SERVICE_URL || "http://localhost:8002";
+  import.meta.env.VITE_AUDIT_SERVICE_URL || "/";
 const MONOLITH_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  import.meta.env.VITE_API_BASE_URL || "/";
 
 // Define which paths belong to which service
 const SERVICE_ROUTES = {
@@ -83,16 +83,9 @@ const api = axios.create({
   withCredentials: false,
 });
 
-// Request interceptor - route to correct service and attach token
+// Request interceptor - attach token only (routing via Nginx proxy, no baseURL needed)
 api.interceptors.request.use(
   (config) => {
-    // Determine the correct base URL for this request
-    const path = config.url || "";
-    const baseURL = getServiceURL(path);
-
-    // Set the base URL for this request
-    config.baseURL = baseURL;
-
     // Attach auth token
     const token = getToken();
     if (token && config && config.headers) {
@@ -101,7 +94,7 @@ api.interceptors.request.use(
 
     // Log for debugging (remove in production)
     console.log(
-      `[API Router] ${config.method?.toUpperCase()} ${path} → ${baseURL}`,
+      `[API Router] ${config.method?.toUpperCase()} ${config.url}`,
     );
 
     return config;

@@ -8,7 +8,7 @@ from typing import Optional
 from app.core.events import DomainEvent
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ApplicationCreated(DomainEvent):
     """Published when a new application is created."""
     
@@ -22,7 +22,7 @@ class ApplicationCreated(DomainEvent):
         return "application.created"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ApplicationUpdated(DomainEvent):
     """Published when an application is updated."""
     
@@ -35,7 +35,7 @@ class ApplicationUpdated(DomainEvent):
         return "application.updated"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ApplicationDeleted(DomainEvent):
     """Published when an application is deleted."""
     
@@ -47,7 +47,7 @@ class ApplicationDeleted(DomainEvent):
         return "application.deleted"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class VulnerabilityCreated(DomainEvent):
     """Published when a new vulnerability is created."""
     
@@ -63,7 +63,7 @@ class VulnerabilityCreated(DomainEvent):
         return "vulnerability.created"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class VulnerabilityUpdated(DomainEvent):
     """Published when a vulnerability is updated."""
     
@@ -77,7 +77,7 @@ class VulnerabilityUpdated(DomainEvent):
         return "vulnerability.updated"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class VulnerabilityClosed(DomainEvent):
     """Published when a vulnerability is marked as closed/resolved."""
     
@@ -92,7 +92,7 @@ class VulnerabilityClosed(DomainEvent):
         return "vulnerability.closed"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ApplicationReminderSent(DomainEvent):
     """Published when a reminder is sent for an application."""
     

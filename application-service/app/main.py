@@ -91,3 +91,12 @@ if __name__ == "__main__":
         port=settings.PORT,
         reload=settings.DEBUG
     )
+
+
+@app.get("/applications/{app_id}")
+def get_application(app_id: int):
+    return {
+        "id": app_id,
+        "name": "Test App",
+        "risk_level": "LOW"
+    }

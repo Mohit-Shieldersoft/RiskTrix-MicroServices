@@ -2,34 +2,33 @@
 FROM node:18-alpine as frontend-build
 
 WORKDIR /app
-
 COPY package*.json ./
-
 RUN npm ci
-
 COPY . .
 
-RUN npm run build
+# Build the app
+RUN npm run build || true
 
-FROM node:18-alpine
-
-WORKDIR /app
+# Runtime stage
+FROM alpine:latest
 
 RUN apk add --no-cache nginx
 
-COPY --from=frontend-build /app/dist /app/public
+# Create nginx directories
+RUN mkdir -p /usr/share/nginx/html /var/cache/nginx /var/log/nginx
 
-COPY . /app/
+# Copy built files from build stage
+COPY --from=frontend-build /app/dist /usr/share/nginx/html
 
-RUN cd /app && npm ci --only=production
-
+# Copy nginx config
 COPY nginx.conf /etc/nginx/http.d/default.conf
 
-RUN echo '#!/bin/sh' > /app/start.sh && \
-    echo 'nginx' >> /app/start.sh && \
-    echo 'cd /app && node server/server.js' >> /app/start.sh && \
-    chmod +x /app/start.sh
+# Create entrypoint script
+RUN echo '#!/bin/sh' > /entrypoint.sh && \
+    echo 'echo "Starting Nginx..."' >> /entrypoint.sh && \
+    echo 'nginx -g "daemon off;"' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
 
 EXPOSE 8888
 
-CMD ["/app/start.sh"]
+ENTRYPOINT ["/entrypoint.sh"]

@@ -8,7 +8,7 @@ from typing import Optional
 from app.core.events import DomainEvent
 
 
-@dataclass
+@dataclass(kw_only=True)
 class VendorCreated(DomainEvent):
     """Published when a new vendor is created."""
     
@@ -21,7 +21,7 @@ class VendorCreated(DomainEvent):
         return "vendor.created"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class VendorUpdated(DomainEvent):
     """Published when a vendor is updated."""
     
@@ -34,7 +34,7 @@ class VendorUpdated(DomainEvent):
         return "vendor.updated"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class VendorDeleted(DomainEvent):
     """Published when a vendor is deleted."""
     
@@ -46,7 +46,7 @@ class VendorDeleted(DomainEvent):
         return "vendor.deleted"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class VendorComplianceUpdated(DomainEvent):
     """Published when vendor compliance status changes."""
     
@@ -61,7 +61,7 @@ class VendorComplianceUpdated(DomainEvent):
         return "vendor.compliance_updated"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class CertificateCreated(DomainEvent):
     """Published when a vendor certificate is uploaded."""
     
@@ -76,7 +76,7 @@ class CertificateCreated(DomainEvent):
         return "certificate.created"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class CertificateExpiring(DomainEvent):
     """Published when a certificate is about to expire."""
     
@@ -92,7 +92,7 @@ class CertificateExpiring(DomainEvent):
         return "certificate.expiring"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ExceptionCreated(DomainEvent):
     """Published when a new exception is created."""
     
@@ -107,7 +107,7 @@ class ExceptionCreated(DomainEvent):
         return "exception.created"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ExceptionUpdated(DomainEvent):
     """Published when an exception is updated."""
     
@@ -120,7 +120,7 @@ class ExceptionUpdated(DomainEvent):
         return "exception.updated"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ExceptionApproved(DomainEvent):
     """Published when an exception is approved."""
     
@@ -134,7 +134,7 @@ class ExceptionApproved(DomainEvent):
         return "exception.approved"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ExceptionRejected(DomainEvent):
     """Published when an exception is rejected."""
     
@@ -148,7 +148,7 @@ class ExceptionRejected(DomainEvent):
         return "exception.rejected"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ExceptionExpired(DomainEvent):
     """Published when an exception expires."""
     
@@ -161,7 +161,7 @@ class ExceptionExpired(DomainEvent):
         return "exception.expired"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AssessmentCreated(DomainEvent):
     """Published when a new assessment/assignment is created."""
     
@@ -175,7 +175,7 @@ class AssessmentCreated(DomainEvent):
         return "assessment.created"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AssessmentCompleted(DomainEvent):
     """Published when an assessment is completed."""
     
@@ -189,21 +189,21 @@ class AssessmentCompleted(DomainEvent):
         return "assessment.completed"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ComplianceRecordCreated(DomainEvent):
     """Published when a compliance record is created."""
     
     record_id: int
     standard: str
-    requirement: Optional[str] = None
     status: str
+    requirement: Optional[str] = None
     
     @property
     def event_type(self) -> str:
         return "compliance.record_created"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class VendorReminderSent(DomainEvent):
     """Published when a reminder is sent for a vendor."""
     
@@ -218,7 +218,7 @@ class VendorReminderSent(DomainEvent):
         return "vendor.reminder_sent"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ExceptionReminderSent(DomainEvent):
     """Published when a reminder is sent for an exception."""
     

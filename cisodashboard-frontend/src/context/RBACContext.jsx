@@ -3,15 +3,15 @@
  */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-// Define user roles - must match backend
+// Define user roles - must match backend (lowercase values match backend storage)
 export const UserRoles = {
-  ADMIN: 'ADMIN',
-  CISO: 'CISO',
-  INFOSEC_MANAGER: 'INFOSEC_MANAGER',
-  EXTERNAL_AUDITOR: 'EXTERNAL_AUDITOR',
-  INTERNAL_AUDITOR: 'INTERNAL_AUDITOR',
-  SECURITY_ANALYST: 'SECURITY_ANALYST',
-  VIEWER: 'VIEWER'
+  ADMIN: 'admin',
+  CISO: 'ciso',
+  INFOSEC_MANAGER: 'infosec_manager',
+  EXTERNAL_AUDITOR: 'external_auditor',
+  INTERNAL_AUDITOR: 'internal_auditor',
+  SECURITY_ANALYST: 'security_analyst',
+  VIEWER: 'viewer'
 };
 
 // Role display names
@@ -144,13 +144,13 @@ export const RBACProvider = ({ children }) => {
   const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
-    // Load user from localStorage
-    const storedUser = localStorage.getItem('user');
+    // Load user from localStorage (matches key used by auth.js)
+    const storedUser = localStorage.getItem('rt_user_profile');
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
         setCurrentUser(user);
-        setUserRole(user.role || UserRoles.VIEWER);
+        setUserRole(user.role?.toLowerCase() || UserRoles.VIEWER);
       } catch (error) {
         console.error('Error parsing user from localStorage:', error);
       }
@@ -163,9 +163,10 @@ export const RBACProvider = ({ children }) => {
       requiredRoles = [requiredRoles];
     }
     
-    // Check if user has any of the required roles
+    // Check if the user's role hierarchy includes any of the required roles
+    const userHierarchy = ROLE_HIERARCHY[userRole] || [userRole];
     for (const required of requiredRoles) {
-      if (ROLE_HIERARCHY[required]?.includes(userRole)) {
+      if (userHierarchy.includes(required)) {
         return true;
       }
     }
@@ -201,11 +202,11 @@ export const RBACProvider = ({ children }) => {
     userRole,
     setCurrentUser: (user) => {
       setCurrentUser(user);
-      setUserRole(user?.role || UserRoles.VIEWER);
+      setUserRole(user?.role?.toLowerCase() || UserRoles.VIEWER);
       if (user) {
-        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('rt_user_profile', JSON.stringify(user));
       } else {
-        localStorage.removeItem('user');
+        localStorage.removeItem('rt_user_profile');
       }
     },
     checkRole,

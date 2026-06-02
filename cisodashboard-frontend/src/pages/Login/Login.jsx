@@ -37,8 +37,7 @@ const Login = () => {
     setError("");
 
     try {
-      const API_BASE_URL =
-        import.meta.env.VITE_APPLICATION_SERVICE_URL || "http://localhost:8001";
+      const API_BASE_URL = "";
       const API_PREFIX = "/api/v1";
 
       // Determine if input is email or username
@@ -162,33 +161,31 @@ const Login = () => {
               {loading ? "Authenticating..." : "Sign In"}
             </Button>
 
-            {/* Dev Mode Button - Only show in development */}
-            {import.meta.env.DEV && (
-              <>
-                <Divider sx={{ my: 2 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Development Mode
-                  </Typography>
-                </Divider>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  color="warning"
-                  startIcon={<DeveloperModeIcon />}
-                  onClick={enableDevMode}
-                  sx={{ py: 1.5 }}
-                >
-                  Skip Login (Test Microservices)
-                </Button>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ mt: 1, textAlign: "center", display: "block" }}
-                >
-                  Bypass auth to test TPRM/Vendors & Compliance microservices
+            {/* Dev Mode Button - Always show for testing */}
+            <>
+              <Divider sx={{ my: 2 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Development Mode
                 </Typography>
-              </>
-            )}
+              </Divider>
+              <Button
+                fullWidth
+                variant="outlined"
+                color="warning"
+                startIcon={<DeveloperModeIcon />}
+                onClick={enableDevMode}
+                sx={{ py: 1.5 }}
+              >
+                Skip Login (Test Microservices)
+              </Button>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mt: 1, textAlign: "center", display: "block" }}
+              >
+                Bypass auth to test TPRM/Vendors & Compliance microservices
+              </Typography>
+            </>
           </Box>
         </Paper>
       </Container>

@@ -16,6 +16,7 @@ import {
   TableRow,
   Paper,
   Pagination,
+  Alert,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
@@ -116,8 +117,11 @@ const ClosureTracking = () => {
       setTotalPages(response.pages || 1);
 
       // Format dates for display
-      const formattedVulns = response.items.map((vuln) => ({
+      const formattedVulns = (response?.items || []).map((vuln) => ({
         ...vuln,
+        name: vuln.name || vuln.title || "Untitled",
+        risk: vuln.risk || vuln.severity || "medium",
+        application: vuln.application || vuln.application_name || "-",
         openDate: vuln.open_date
           ? new Date(vuln.open_date).toISOString().split("T")[0]
           : null,

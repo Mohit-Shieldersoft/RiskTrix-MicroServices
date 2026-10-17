@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import os
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -9,6 +11,56 @@ from app.models.models import Assignment, Assessment, ComplianceRequirement
 from app.schemas.assignment import AssignmentResponse, AssessmentResponse, AssignmentCreate, AssessmentUpdate
 
 router = APIRouter()
+POC_DIR = os.getenv("ASSESSMENT_POC_DIR", "./uploads/assessment-poc")
+
+
+@router.post('/assessments/{assessment_id}/poc-upload', response_model=AssessmentResponse)
+async def upload_assessment_poc(
+    assessment_id: int,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_session)
+):
+    result = await db.execute(
+        select(Assessment)
+        .options(selectinload(Assessment.compliance_requirement))
+        .where(Assessment.id == assessment_id)
+    )
+    assessment = result.scalars().first()
+    if not assessment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Assessment not found')
+    os.makedirs(POC_DIR, exist_ok=True)
+    filename = f"assessment_{assessment_id}_{os.path.basename(file.filename or 'poc.bin')}"
+    path = os.path.join(POC_DIR, filename)
+    with open(path, "wb") as buffer:
+        buffer.write(await file.read())
+    assessment.poc = path
+    await db.commit()
+    await db.refresh(assessment)
+    statement = assessment.control_identifier
+    if assessment.compliance_requirement:
+        statement = assessment.compliance_requirement.description or assessment.compliance_requirement.title
+    return AssessmentResponse(
+        id=assessment.id,
+        vendor_id=assessment.vendor_id,
+        assignment_id=assessment.assignment_id,
+        control_identifier=assessment.control_identifier,
+        statement=statement,
+        section=assessment.compliance_requirement.category if assessment.compliance_requirement else None,
+        compliant=assessment.compliant,
+        remark=assessment.remark,
+        poc=assessment.poc,
+        status=assessment.status,
+    )
+
+
+@router.get('/assessments/{assessment_id}/poc')
+async def download_assessment_poc(assessment_id: int, db: AsyncSession = Depends(get_session)):
+    result = await db.execute(select(Assessment).where(Assessment.id == assessment_id))
+    assessment = result.scalars().first()
+    path = assessment.poc if assessment else None
+    if not path or not os.path.isfile(path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='POC file not found')
+    return FileResponse(path, filename=os.path.basename(path), media_type="application/octet-stream")
 
 
 @router.get('/', response_model=List[AssignmentResponse])
@@ -72,7 +124,7 @@ async def create_assignment(payload: AssignmentCreate, db: AsyncSession = Depend
         due_date=payload.due_date
     )
     db.add(a)
-    await db.flush()
+    await db.commit()
     await db.refresh(a)
     return a
 

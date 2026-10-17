@@ -8,7 +8,9 @@ from contextlib import asynccontextmanager
 
 from app.api.v1.api import api_router
 from app.core.config import settings
-from app.db.session import SessionLocal, sync_engine
+from app.db.session import SessionLocal, sync_engine, engine, Base
+from app.db.init_db import init_db
+from app.models import models as _identity_models  # noqa: F401
 from app.utils.logger import setup_logger
 from sqlalchemy import text
 
@@ -21,7 +23,16 @@ async def lifespan(app: FastAPI):
     logger.info("🚀 Starting RiskTrix Backend Application...")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"API Version: {settings.API_VERSION}")
-    
+    try:
+        from sqlalchemy import text
+        async with engine.begin() as conn:
+            await conn.execute(text("CREATE SCHEMA IF NOT EXISTS schema_identity"))
+            await conn.run_sync(Base.metadata.create_all)
+        async with SessionLocal() as session:
+            await init_db(session)
+        logger.info("Identity tables and seed users are ready")
+    except Exception as exc:
+        logger.warning("Identity initialization note: %s", exc)
     logger.info("✅ Application started successfully")
     
     yield

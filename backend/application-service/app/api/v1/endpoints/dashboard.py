@@ -29,6 +29,8 @@ def _days_since(dt: datetime, now: datetime) -> int:
     return max(0, (now - _as_utc(dt)).days)
 
 
+@router.get("")
+@router.get("/")
 @router.get("/data")
 async def get_dashboard_data(
     db: AsyncSession = Depends(get_session)

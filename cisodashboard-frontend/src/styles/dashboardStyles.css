@@ -31,39 +31,8 @@ html, body, #root {
     overflow-x: hidden;
   }
   
-  .MuiGrid-container {
-    width: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-  }
-  
-  @media (min-width: 960px) {
-    .MuiGrid-container {
-      flex-wrap: nowrap !important;
-    }
-  }
-  
-  /* Equal height cards */
-  .MuiPaper-root {
-    height: 100%;
-  }
-  
-  /* Smooth responsive behavior */
-  @media (max-width: 959.95px) {
-    .MuiGrid-container {
-      flex-direction: column;
-    }
-    
-    .MuiGrid-item {
-      width: 100% !important;
-      padding: 12px !important;
-    }
-  }
-  
-  @media (min-width: 960px) and (max-width: 1279.95px) {
-    .MuiGrid-item {
-      padding: 12px !important;
-    }
+  .page-grid {
+    width: 100%;
   }
   /* Additional enhancements for responsive behavior */
   @media (max-width: 600px) {

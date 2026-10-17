@@ -28,8 +28,18 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import EventBusyIcon from "@mui/icons-material/EventBusy";
 import ExpandLess from "@mui/icons-material/ExpandLess"; // Added ExpandLess
 import ExpandMore from "@mui/icons-material/ExpandMore"; // Added ExpandMore
+import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import FolderIcon from "@mui/icons-material/Folder"; // Example icon for parent items
 import GavelIcon from "@mui/icons-material/Gavel"; // Example icon for Audit parent
+import CloudQueueIcon from "@mui/icons-material/CloudQueue";
+import StorageIcon from "@mui/icons-material/Storage";
+import HubIcon from "@mui/icons-material/Hub";
+import DnsIcon from "@mui/icons-material/Dns";
+import InventoryIcon from "@mui/icons-material/Inventory";
+
+import AltRouteIcon from "@mui/icons-material/AltRoute";
+import LockIcon from "@mui/icons-material/Lock";
+import NetworkCheckIcon from "@mui/icons-material/NetworkCheck";
 
 import dashboardTheme from "../../theme/dashboardTheme";
 
@@ -151,6 +161,47 @@ const Sidebar = ({ open, onClose }) => {
       ],
     },
     {
+      text: "Cloud Posture",
+      icon: <CloudQueueIcon />,
+      children: [
+        { text: "Cloud Accounts", icon: <CloudQueueIcon />, path: "/cloud" },
+        { text: "Asset Explorer", icon: <StorageIcon />, path: "/assets" },
+        { text: "CSPM Findings", icon: <ReportProblemIcon />, path: "/findings" },
+        { text: "Policies", icon: <GavelIcon />, path: "/policies" },
+        { text: "Cloud Compliance", icon: <VerifiedUserIcon />, path: "/cloud/compliance" },
+        { text: "Security Score", icon: <AssessmentIcon />, path: "/security-score" },
+        { text: "Network", icon: <DnsIcon />, path: "/network" },
+        { text: "Databases", icon: <StorageIcon />, path: "/databases" },
+        { text: "Compute", icon: <InventoryIcon />, path: "/compute" },
+      ],
+    },
+    {
+      text: "Workloads",
+      icon: <DnsIcon />,
+      children: [
+        { text: "CIEM", icon: <HubIcon />, path: "/ciem" },
+        { text: "Kubernetes", icon: <DnsIcon />, path: "/kubernetes" },
+        { text: "Containers", icon: <InventoryIcon />, path: "/containers" },
+        { text: "SBOM", icon: <InventoryIcon />, path: "/containers/sbom" },
+        { text: "Runtime", icon: <SecurityIcon />, path: "/runtime" },
+        { text: "Secrets & IaC", icon: <LockIcon />, path: "/cloud/secrets" },
+      ],
+    },
+    {
+      text: "Detection",
+      icon: <NotificationsIcon />,
+      children: [
+        { text: "Alert Inbox", icon: <NotificationsIcon />, path: "/alerts" },
+        { text: "Vulnerabilities", icon: <AssessmentIcon />, path: "/cloud/vulnerabilities" },
+        { text: "Attack Paths", icon: <AltRouteIcon />, path: "/cloud/attack-paths" },
+        { text: "Toxic Risks", icon: <HubIcon />, path: "/cloud/toxic-risks" },
+        { text: "SOAR Playbooks", icon: <AutoFixHighIcon />, path: "/soar/playbooks" },
+        { text: "Webhooks", icon: <HubIcon />, path: "/notifications" },
+        { text: "IP Scanner", icon: <NetworkCheckIcon />, path: "/ip-scanner" },
+        { text: "Search", icon: <AssessmentIcon />, path: "/search" },
+      ],
+    },
+    {
       text: "EOSL",
       icon: <EventBusyIcon />,
       path: "/eosl",
@@ -161,9 +212,29 @@ const Sidebar = ({ open, onClose }) => {
       path: "/reports",
     },
     {
+      text: "Help",
+      icon: <AssessmentIcon />,
+      path: "/help",
+    },
+    {
+      text: "Platform Audit",
+      icon: <HistoryIcon />,
+      path: "/platform-audit",
+    },
+    {
       text: "Settings",
       icon: <SettingsIcon />,
       path: "/settings",
+    },
+    {
+      text: "Roles",
+      icon: <VerifiedUserIcon />,
+      path: "/admin/roles",
+    },
+    {
+      text: "Users",
+      icon: <SettingsIcon />,
+      path: "/admin/users",
     },
   ];
 
@@ -200,25 +271,23 @@ const Sidebar = ({ open, onClose }) => {
       onClose={onClose}
       sx={{
         "& .MuiDrawer-paper": {
-          width: 250,
-          background: dashboardTheme.colors.background.main,
-          borderRight: "none", // Cleaner look
+          width: 280,
+          background: dashboardTheme.colors.background.paper,
+          borderRight: "1px solid rgba(63, 81, 181, 0.08)",
         },
       }}
     >
-      <Box sx={{ p: 2, display: "flex", alignItems: "center", height: "64px" }}>
-        {" "}
-        {/* Match AppBar height */}
+      <Box sx={{ p: 2, display: "flex", alignItems: "center", height: 64 }}>
         <Typography
           variant="h6"
           component="div"
-          sx={{ fontWeight: "bold", color: dashboardTheme.colors.primary }}
+          sx={{ fontWeight: 700, color: dashboardTheme.colors.primary }}
         >
-          Vulnerability Monitor
+          RiskTrix
         </Typography>
       </Box>
       <Divider />
-      <List sx={{ pt: 1 }}>
+      <List sx={{ pt: 1, pb: 3, overflowY: "auto" }}>
         {" "}
         {/* Add padding top */}
         {menuItems.map((item) => {

@@ -83,3 +83,10 @@ export function clearAuth() {
   removeRefreshToken();
   removeUserProfile();
 }
+
+export const DEMO_EMAIL = "demo@risktrix.io";
+
+export function isDemoAccount(profile = getUserProfile()) {
+  const email = (profile?.email || "").toLowerCase();
+  return email === DEMO_EMAIL;
+}

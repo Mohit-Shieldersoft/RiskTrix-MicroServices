@@ -5,6 +5,11 @@ from .models import (
     Organization,
     UserRole,
     TimestampMixin,
+    Invitation,
+    IamRole,
+    PlatformAuditLog,
+    ComplianceStandard,
+    SmtpConfig,
 )
 
 __all__ = [

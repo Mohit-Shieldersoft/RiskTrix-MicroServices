@@ -43,6 +43,9 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        version_table="alembic_version_binary",
+        include_schemas=True,
+        execution_options={"schema_translate_map": {None: "schema_binary"}},
     )
 
     with context.begin_transaction():
@@ -73,8 +76,11 @@ def run_migrations_online():
 
 def do_run_migrations(connection):
     context.configure(
-        connection=connection, target_metadata=target_metadata,
-        version_table="alembic_version_binary"
+        connection=connection,
+        target_metadata=target_metadata,
+        version_table="alembic_version_binary",
+        include_schemas=True,
+        execution_options={"schema_translate_map": {None: "schema_binary"}},
     )
 
     with context.begin_transaction():

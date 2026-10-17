@@ -17,16 +17,16 @@ class Settings(BaseSettings):
     PORT: int = Field(default=8002, env="PORT")
     
     # Security
-    SECRET_KEY: str = Field(..., env="SECRET_KEY")
+    SECRET_KEY: str = Field(default="risktrix-audit-secret-key-default-32-bytes", env="SECRET_KEY")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # Database
-    POSTGRES_SERVER: str = Field(..., env="POSTGRES_SERVER")
+    POSTGRES_SERVER: str = Field(default="localhost", env="POSTGRES_SERVER")
     POSTGRES_PORT: int = Field(default=5432, env="POSTGRES_PORT")
-    POSTGRES_USER: str = Field(..., env="POSTGRES_USER")
-    POSTGRES_PASSWORD: str = Field(..., env="POSTGRES_PASSWORD")
-    POSTGRES_DB: str = Field(..., env="POSTGRES_DB")
+    POSTGRES_USER: str = Field(default="risktrix", env="POSTGRES_USER")
+    POSTGRES_PASSWORD: str = Field(default="password", env="POSTGRES_PASSWORD")
+    POSTGRES_DB: str = Field(default="risktrix_db", env="POSTGRES_DB")
     
     # Redis
     REDIS_URL: str = Field(default="redis://localhost:6379", env="REDIS_URL")
@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://localhost:8080",
         "http://localhost:8000",
         "http://localhost:8001",
         "http://localhost:8002",

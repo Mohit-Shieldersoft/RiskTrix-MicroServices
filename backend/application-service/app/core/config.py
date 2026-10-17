@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     PORT: int = Field(default=8001, env="PORT")  # Different port from main monolith
     
     # Security - MUST match main monolith for JWT validation
-    SECRET_KEY: str = Field(..., env="SECRET_KEY")  # Required, must match monolith
+    SECRET_KEY: str = Field(default="risktrix_secret_key_change_in_production", env="SECRET_KEY")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30, env="ACCESS_TOKEN_EXPIRE_MINUTES")
     

@@ -3,7 +3,6 @@ import { Box, Typography, Grid, Fade, Divider } from "@mui/material";
 import VendorReminders from "./components/VendorReminders";
 import ApplicationReminders from "./components/ApplicationReminders";
 import ExceptionReminders from "./components/ExceptionReminders";
-import { generateMockReminderData } from "./mockData";
 import reminderApi from "../../utils/reminderApi";
 import { getUserProfile } from "../../utils/auth";
 import dashboardTheme from "../../theme/dashboardTheme";
@@ -27,13 +26,13 @@ const Reminder = () => {
         const data = await reminderApi.getFrontendReminderData();
         setReminderData(data);
       } catch (err) {
-        // Fallback to mock data if API fails
-        console.error(
-          "Failed to fetch reminders from API, using mock data.",
-          err,
-        );
-        const data = generateMockReminderData();
-        setReminderData(data);
+        console.error("Failed to fetch reminders from API.", err);
+        setReminderData({
+          vendorReminders: [],
+          applicationReminders: [],
+          exceptionReminders: [],
+          stats: { vendors: 0, applications: 0, exceptions: 0 },
+        });
       } finally {
         setLoading(false);
       }

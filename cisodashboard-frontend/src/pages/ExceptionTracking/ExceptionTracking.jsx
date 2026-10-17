@@ -83,7 +83,7 @@ const ExceptionTracking = () => {
             (exception.end_date
               ? new Date(exception.end_date) < new Date()
               : false),
-          pocDocument: null,
+          pocDocument: exception.poc_document || null,
         }));
         setExceptionData(transformedData);
 

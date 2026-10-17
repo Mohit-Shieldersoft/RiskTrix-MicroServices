@@ -59,6 +59,15 @@ ROLE_PERMISSIONS = {
         "reports": ["create", "read", "update", "delete"],
         "audit": ["create", "read", "update", "delete"],
         "settings": ["read", "update"],
+        "cloud_accounts": ["create", "read", "update", "delete", "sync"],
+        "cspm_findings": ["read", "update", "suppress", "remediate"],
+        "cspm_policies": ["create", "read", "update", "delete"],
+        "ciem": ["read", "analyze", "update"],
+        "k8s_security": ["read", "scan", "update"],
+        "container_security": ["read", "scan", "delete"],
+        "runtime_security": ["read", "configure", "update"],
+        "security_alerts": ["read", "update", "assign", "resolve"],
+        "security_score": ["read", "recalculate"],
     },
     UserRole.CISO: {
         "users": ["read"],
@@ -70,6 +79,15 @@ ROLE_PERMISSIONS = {
         "reports": ["create", "read"],
         "audit": ["read"],
         "settings": ["read"],
+        "cloud_accounts": ["read", "sync"],
+        "cspm_findings": ["read", "update", "suppress"],
+        "cspm_policies": ["read", "update"],
+        "ciem": ["read", "analyze"],
+        "k8s_security": ["read"],
+        "container_security": ["read"],
+        "runtime_security": ["read"],
+        "security_alerts": ["read", "update", "assign"],
+        "security_score": ["read", "recalculate"],
     },
     UserRole.INFOSEC_MANAGER: {
         "applications": ["create", "read", "update"],
@@ -79,6 +97,15 @@ ROLE_PERMISSIONS = {
         "exceptions": ["create", "read", "update"],
         "reports": ["create", "read"],
         "audit": ["read"],
+        "cloud_accounts": ["read", "sync"],
+        "cspm_findings": ["read", "update"],
+        "cspm_policies": ["read"],
+        "ciem": ["read", "analyze"],
+        "k8s_security": ["read", "scan"],
+        "container_security": ["read", "scan"],
+        "runtime_security": ["read"],
+        "security_alerts": ["read", "update", "assign"],
+        "security_score": ["read"],
     },
     UserRole.EXTERNAL_AUDITOR: {
         "applications": ["read"],
@@ -88,6 +115,10 @@ ROLE_PERMISSIONS = {
         "exceptions": ["read"],
         "reports": ["read"],
         "audit": ["read"],
+        "cloud_accounts": ["read"],
+        "cspm_findings": ["read"],
+        "cspm_policies": ["read"],
+        "security_score": ["read"],
     },
     UserRole.INTERNAL_AUDITOR: {
         "applications": ["read"],
@@ -97,6 +128,15 @@ ROLE_PERMISSIONS = {
         "exceptions": ["read"],
         "reports": ["create", "read"],
         "audit": ["create", "read"],
+        "cloud_accounts": ["read"],
+        "cspm_findings": ["read"],
+        "cspm_policies": ["read"],
+        "ciem": ["read"],
+        "k8s_security": ["read"],
+        "container_security": ["read"],
+        "runtime_security": ["read"],
+        "security_alerts": ["read"],
+        "security_score": ["read"],
     },
     UserRole.SECURITY_ANALYST: {
         "applications": ["read", "update"],
@@ -106,6 +146,15 @@ ROLE_PERMISSIONS = {
         "exceptions": ["create", "read"],
         "reports": ["read"],
         "audit": ["read"],
+        "cloud_accounts": ["read"],
+        "cspm_findings": ["read", "update"],
+        "cspm_policies": ["read"],
+        "ciem": ["read"],
+        "k8s_security": ["read", "scan"],
+        "container_security": ["read", "scan"],
+        "runtime_security": ["read"],
+        "security_alerts": ["read", "update"],
+        "security_score": ["read"],
     },
     UserRole.VIEWER: {
         "applications": ["read"],
@@ -115,6 +164,9 @@ ROLE_PERMISSIONS = {
         "exceptions": ["read"],
         "reports": ["read"],
         "audit": ["read"],
+        "cloud_accounts": ["read"],
+        "cspm_findings": ["read"],
+        "security_score": ["read"],
     }
 }
 
@@ -135,7 +187,7 @@ def check_role(user: User, required_roles: List[UserRole]) -> bool:
     
     # Check if user has any of the required roles
     for required_role in required_roles:
-        if user_role in ROLE_HIERARCHY.get(required_role, []):
+        if required_role in ROLE_HIERARCHY.get(user_role, []):
             return True
     
     return False

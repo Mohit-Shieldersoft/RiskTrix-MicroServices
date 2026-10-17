@@ -209,6 +209,7 @@ import {
 } from '@mui/material';
 import { useNavigate, Link } from 'react-router-dom';
 import Security from '@mui/icons-material/Security';
+import api from '../../utils/api';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -254,27 +255,16 @@ const handleChange = e => {
     }
 
     try {
-      // simple client-side signup stored in localStorage
-      const users = JSON.parse(localStorage.getItem('mock_users') || '[]');
-      const exists = users.find(u => u.email === (email || '').toLowerCase());
-      if (exists) {
-        setError('Email already registered. Please login.');
-        return;
-      }
-      const newUser = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
-        email: (email || '').toLowerCase(),
+      await api.post("/api/v1/auth/register", {
+        email: (email || "").toLowerCase(),
+        username: (email || "").split("@")[0],
+        full_name: email,
         password,
-        role: Number(role) || 4,
-        created_at: new Date().toISOString()
-      };
-      users.push(newUser);
-      localStorage.setItem('mock_users', JSON.stringify(users));
-
-      setSuccessMsg('Signup successful. Redirecting to login...');
-      setTimeout(() => navigate('/login'), 1200);
+      });
+      setSuccessMsg("Signup successful. Redirecting to login...");
+      setTimeout(() => navigate("/login"), 1200);
     } catch (err) {
-      setError(err?.message || 'Signup failed');
+      setError(err?.response?.data?.detail || err?.message || 'Signup failed');
     } finally {
       setLoading(false);
     }

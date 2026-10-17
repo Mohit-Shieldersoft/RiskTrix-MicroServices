@@ -1,4 +1,4 @@
-import React, { useState } from "react"; // Removed useEffect as it wasn't used in the base version
+import React, { useState } from "react";
 import {
   AppBar,
   Box,
@@ -6,27 +6,34 @@ import {
   IconButton,
   Toolbar,
   Typography,
-  useMediaQuery,
-  useTheme,
-  Badge,
+  Tooltip,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import SearchIcon from "@mui/icons-material/Search";
 import Sidebar from "../Navigation/Sidebar";
 import dashboardTheme from "../../theme/dashboardTheme";
 import NotificationPanel from "../NotificationPanel/NotificationPanel";
 import UserMenu from "../UserMenu/UserMenu";
 import { useNavigate } from "react-router-dom";
+import CommandPalette from "../common/CommandPalette";
 
 const MainLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const theme = useTheme();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSidebarToggle = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
+  React.useEffect(() => {
+    const onKey = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPaletteOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   return (
-    // Base working layout structure
     <Box
       sx={{
         display: "flex",
@@ -38,69 +45,63 @@ const MainLayout = ({ children }) => {
       <CssBaseline />
       <AppBar
         position="fixed"
-        elevation={2}
+        elevation={0}
         sx={{
-          // Using theme color from base version
           bgcolor: dashboardTheme.colors.primary,
-          height: "64px", // Fixed height
-          zIndex: (theme) => theme.zIndex.drawer + 1,
+          height: 64,
+          zIndex: (muiTheme) => muiTheme.zIndex.drawer + 1,
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
         }}
       >
-        <Toolbar sx={{ justifyContent: "space-between" }}>
-          {/* Left side: Menu Icon and Title */}
-          <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Toolbar sx={{ justifyContent: "space-between", minHeight: "64px !important" }}>
+          <Box sx={{ display: "flex", alignItems: "center", minWidth: 0 }}>
             <IconButton
               color="inherit"
-              aria-label="open drawer"
+              aria-label="open navigation"
               edge="start"
-              onClick={handleSidebarToggle}
-              sx={{ mr: 2 }}
+              onClick={() => setSidebarOpen((open) => !open)}
+              sx={{ mr: 1.5 }}
             >
               <MenuIcon />
             </IconButton>
             <Typography
               variant="h6"
               noWrap
-              component="div"
-              sx={{ fontWeight: 600 }}
+              sx={{ fontWeight: 700, letterSpacing: "-0.02em" }}
             >
               RiskTrix
             </Typography>
           </Box>
-
-          {/* Right side: Action buttons - INTEGRATE NotificationPanel HERE */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            {" "}
-            {/* Added alignItems */}
-            {/* Add the NotificationPanel component */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Tooltip title="Search / Ctrl+K">
+              <IconButton color="inherit" onClick={() => setPaletteOpen(true)}>
+                <SearchIcon />
+              </IconButton>
+            </Tooltip>
             <NotificationPanel />
             <UserMenu />
           </Box>
         </Toolbar>
       </AppBar>
 
-      {/* Sidebar (using base version logic) */}
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Main Content Area (using base version logic) */}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          width: "100%", // Ensure it tries to take full width
-          mt: "64px", // Fixed margin top matching AppBar height
-          bgcolor: dashboardTheme.colors.background.main, // Use theme background
-          minHeight: "calc(100vh - 64px)", // Viewport height minus AppBar height
-          // px: 0 // Keep horizontal padding removed if that was intended
-          // Add some padding if needed for content spacing:
-          p: theme.spacing(3), // Example padding
-          overflowY: "auto", // Ensure content area can scroll if needed
+          width: "100%",
+          mt: "64px",
+          bgcolor: dashboardTheme.colors.background.main,
+          minHeight: "calc(100vh - 64px)",
+          p: { xs: 1.5, sm: 2, md: 3 },
+          overflowX: "hidden",
+          overflowY: "auto",
         }}
       >
-        {/* Add a test element to confirm visibility */}
-        {/* <Typography variant="h3" color="error">CONTENT VISIBLE?</Typography> */}
         {children}
       </Box>
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </Box>
   );
 };

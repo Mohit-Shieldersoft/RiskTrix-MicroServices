@@ -16,7 +16,7 @@ import api from "./api";
  */
 export const fetchYourBoardMetrics = async () => {
   try {
-    const [appsRes, vulnRes, vendorRes, exceptionsRes] =
+    const [appsRes, vulnRes, vendorRes, exceptionsRes, cnappRes, topRisksRes, activityRes] =
       await Promise.allSettled([
         api.get("/api/v1/applications", { params: { skip: 0, limit: 1 } }),
         api.get("/api/v1/vulnerabilities", {
@@ -24,6 +24,9 @@ export const fetchYourBoardMetrics = async () => {
         }),
         api.get("/api/v1/vendors/dashboard"),
         api.get("/api/v1/exceptions/stats/overview"),
+        api.get("/api/v1/cloud/dashboard"),
+        api.get("/api/v1/cloud/dashboard/top-risks"),
+        api.get("/api/v1/cloud/dashboard/recent-activity"),
       ]);
 
     // App Track: total application count
@@ -64,7 +67,32 @@ export const fetchYourBoardMetrics = async () => {
         0;
     }
 
+    let cnappFindings = 0;
+    let cnappAssets = 0;
+    if (cnappRes.status === "fulfilled" && cnappRes.value?.data) {
+      cnappFindings = cnappRes.value.data.findings ?? cnappRes.value.data.total_findings ?? 0;
+      cnappAssets = cnappRes.value.data.assets ?? cnappRes.value.data.total_assets ?? 0;
+    }
+    const topRisks = topRisksRes.status === "fulfilled" ? (topRisksRes.value?.data || []) : [];
+    const recentActivity = activityRes.status === "fulfilled" ? (activityRes.value?.data || []) : [];
+
     const metrics = [
+      {
+        title: "CNAPP Assets",
+        count: cnappAssets,
+        unit: "assets",
+        trend: 0,
+        trendDirection: "up",
+        trendPeriod: "Live",
+      },
+      {
+        title: "CNAPP Findings",
+        count: cnappFindings,
+        unit: "open",
+        trend: 0,
+        trendDirection: "down",
+        trendPeriod: "Live",
+      },
       {
         title: "App Track",
         count: appCount,
@@ -97,6 +125,14 @@ export const fetchYourBoardMetrics = async () => {
         trendDirection: "up",
         trendPeriod: "This month",
       },
+      {
+        title: "CNAPP Findings",
+        count: cnappFindings,
+        unit: "open",
+        trend: 0,
+        trendDirection: "down",
+        trendPeriod: `${Array.isArray(topRisks) ? topRisks.length : 0} top risks`,
+      },
     ];
 
     return {
@@ -104,6 +140,8 @@ export const fetchYourBoardMetrics = async () => {
       data: {
         metrics,
         lastUpdated: new Date().toISOString(),
+        topRisks,
+        recentActivity,
       },
     };
   } catch (error) {

@@ -5,10 +5,10 @@ from datetime import date
 
 class AssignmentCreate(BaseModel):
     name: str
-    description: Optional[str]
-    vendor_id: Optional[int]
-    standard_id: Optional[int]
-    due_date: Optional[date]
+    description: Optional[str] = None
+    vendor_id: Optional[int] = None
+    standard_id: Optional[int] = None
+    due_date: Optional[date] = None
 
 
 class AssignmentResponse(BaseModel):

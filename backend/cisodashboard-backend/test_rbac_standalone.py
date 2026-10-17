@@ -55,6 +55,15 @@ ROLE_PERMISSIONS = {
         "reports": ["create", "read", "update", "delete"],
         "audit": ["create", "read", "update", "delete"],
         "settings": ["create", "read", "update", "delete"],
+        "cloud_accounts": ["create", "read", "update", "delete", "sync"],
+        "cspm_findings": ["read", "update", "suppress", "remediate"],
+        "cspm_policies": ["create", "read", "update", "delete"],
+        "ciem": ["read", "analyze", "update"],
+        "k8s_security": ["read", "scan", "update"],
+        "container_security": ["read", "scan", "delete"],
+        "runtime_security": ["read", "configure", "update"],
+        "security_alerts": ["read", "update", "assign", "resolve"],
+        "security_score": ["read", "recalculate"],
     },
     UserRole.CISO: {
         "applications": ["read", "update"],
@@ -65,6 +74,15 @@ ROLE_PERMISSIONS = {
         "reports": ["create", "read", "update"],
         "audit": ["read"],
         "settings": ["read"],
+        "cloud_accounts": ["read", "sync"],
+        "cspm_findings": ["read", "update", "suppress"],
+        "cspm_policies": ["read", "update"],
+        "ciem": ["read", "analyze"],
+        "k8s_security": ["read"],
+        "container_security": ["read"],
+        "runtime_security": ["read"],
+        "security_alerts": ["read", "update", "assign"],
+        "security_score": ["read", "recalculate"],
     },
     UserRole.INFOSEC_MANAGER: {
         "applications": ["create", "read", "update"],
@@ -73,6 +91,15 @@ ROLE_PERMISSIONS = {
         "vendors": ["read", "update"],
         "exceptions": ["create", "read"],
         "reports": ["read"],
+        "cloud_accounts": ["read", "sync"],
+        "cspm_findings": ["read", "update"],
+        "cspm_policies": ["read"],
+        "ciem": ["read", "analyze"],
+        "k8s_security": ["read", "scan"],
+        "container_security": ["read", "scan"],
+        "runtime_security": ["read"],
+        "security_alerts": ["read", "update", "assign"],
+        "security_score": ["read"],
     },
     UserRole.EXTERNAL_AUDITOR: {
         "applications": ["read"],
@@ -82,6 +109,10 @@ ROLE_PERMISSIONS = {
         "exceptions": ["read"],
         "reports": ["read"],
         "audit": ["read"],
+        "cloud_accounts": ["read"],
+        "cspm_findings": ["read"],
+        "cspm_policies": ["read"],
+        "security_score": ["read"],
     },
     UserRole.INTERNAL_AUDITOR: {
         "applications": ["read"],
@@ -91,6 +122,15 @@ ROLE_PERMISSIONS = {
         "exceptions": ["read"],
         "reports": ["create", "read"],
         "audit": ["create", "read"],
+        "cloud_accounts": ["read"],
+        "cspm_findings": ["read"],
+        "cspm_policies": ["read"],
+        "ciem": ["read"],
+        "k8s_security": ["read"],
+        "container_security": ["read"],
+        "runtime_security": ["read"],
+        "security_alerts": ["read"],
+        "security_score": ["read"],
     },
     UserRole.SECURITY_ANALYST: {
         "applications": ["read", "update"],
@@ -99,6 +139,15 @@ ROLE_PERMISSIONS = {
         "vendors": ["read"],
         "exceptions": ["create", "read"],
         "reports": ["read"],
+        "cloud_accounts": ["read"],
+        "cspm_findings": ["read", "update"],
+        "cspm_policies": ["read"],
+        "ciem": ["read"],
+        "k8s_security": ["read", "scan"],
+        "container_security": ["read", "scan"],
+        "runtime_security": ["read"],
+        "security_alerts": ["read", "update"],
+        "security_score": ["read"],
     },
     UserRole.VIEWER: {
         "applications": ["read"],
@@ -108,6 +157,9 @@ ROLE_PERMISSIONS = {
         "exceptions": ["read"],
         "reports": ["read"],
         "audit": ["read"],
+        "cloud_accounts": ["read"],
+        "cspm_findings": ["read"],
+        "security_score": ["read"],
     },
 }
 
@@ -367,6 +419,47 @@ def test_exception_approval_permissions():
     print("✅ test_exception_approval_permissions passed")
 
 
+def test_cnapp_rbac_permissions():
+    """Test extended CNAPP resource permissions across all 7 roles"""
+    admin = MockUser(UserRole.ADMIN)
+    ciso = MockUser(UserRole.CISO)
+    manager = MockUser(UserRole.INFOSEC_MANAGER)
+    ext_auditor = MockUser(UserRole.EXTERNAL_AUDITOR)
+    int_auditor = MockUser(UserRole.INTERNAL_AUDITOR)
+    analyst = MockUser(UserRole.SECURITY_ANALYST)
+    viewer = MockUser(UserRole.VIEWER)
+
+    # Cloud Accounts
+    assert check_permission(admin, "cloud_accounts", "sync")
+    assert check_permission(ciso, "cloud_accounts", "sync")
+    assert check_permission(manager, "cloud_accounts", "sync")
+    assert check_permission(analyst, "cloud_accounts", "read")
+    assert not check_permission(analyst, "cloud_accounts", "sync")
+
+    # CSPM Findings & Policies
+    assert check_permission(admin, "cspm_findings", "remediate")
+    assert check_permission(ciso, "cspm_findings", "suppress")
+    assert check_permission(admin, "cspm_policies", "create")
+    assert check_permission(ext_auditor, "cspm_policies", "read")
+    assert not check_permission(ext_auditor, "cspm_policies", "create")
+
+    # CIEM & K8s Security
+    assert check_permission(admin, "ciem", "update")
+    assert check_permission(manager, "ciem", "analyze")
+    assert check_permission(analyst, "k8s_security", "scan")
+    assert check_permission(int_auditor, "k8s_security", "read")
+    assert not check_permission(int_auditor, "k8s_security", "scan")
+
+    # Container Security, Runtime Security, Security Alerts & Score
+    assert check_permission(admin, "container_security", "delete")
+    assert check_permission(admin, "security_alerts", "resolve")
+    assert check_permission(ciso, "security_score", "recalculate")
+    assert check_permission(viewer, "security_score", "read")
+    assert not check_permission(viewer, "security_alerts", "assign")
+
+    print("✅ test_cnapp_rbac_permissions passed")
+
+
 if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("🧪 RBAC COMPREHENSIVE TEST SUITE")
@@ -397,9 +490,10 @@ if __name__ == "__main__":
     print("-" * 60)
     test_only_admin_can_delete_users()
     test_exception_approval_permissions()
+    test_cnapp_rbac_permissions()
     
     print("\n" + "=" * 60)
-    print("✅ All 14 RBAC tests passed successfully! 🎉")
+    print("✅ All 15 RBAC tests passed successfully! 🎉")
     print("=" * 60 + "\n")
     
     # Print summary
@@ -407,6 +501,7 @@ if __name__ == "__main__":
     print("-" * 60)
     print(f"✓ Role Hierarchy Tests: 5/5")
     print(f"✓ Permission Tests: 7/7")
-    print(f"✓ Specific Permission Tests: 2/2")
-    print(f"✓ Total Tests Passed: 14/14")
+    print(f"✓ Specific Permission Tests: 3/3")
+    print(f"✓ Total Tests Passed: 15/15")
     print("=" * 60 + "\n")
+

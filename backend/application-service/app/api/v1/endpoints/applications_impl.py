@@ -2,7 +2,10 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status,
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from io import BytesIO
-import pandas as pd
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
 import logging
 from typing import Optional, List
 

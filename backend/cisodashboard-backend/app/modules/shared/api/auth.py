@@ -1,13 +1,15 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from typing import List, Optional
+from typing import List, Optional, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
+import uuid
 
 from app.db.session import get_session
 from app.crud.crud_user import user_crud
 from app.core.security import security_manager, security
-from app.schemas.user import UserResponse
+from app.schemas.user import UserResponse, UserCreate
+from app.models.models import UserRole
 
 router = APIRouter()
 
@@ -160,3 +162,57 @@ async def logout(credentials: HTTPAuthorizationCredentials = Depends(security)):
 async def me(user=Depends(get_current_user)):
     """Return current authenticated user's profile"""
     return user
+
+
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def register(payload: UserCreate, db: AsyncSession = Depends(get_session)):
+    """Public signup. Always creates a non-admin viewer — never a superuser."""
+    existing_email = await user_crud.get_by_email(db, payload.email)
+    if existing_email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+    existing_username = await user_crud.get_by_username(db, payload.username)
+    if existing_username:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
+    payload.is_superuser = False
+    payload.role = UserRole.VIEWER
+    try:
+        user = await user_crud.create(db, obj_in=payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    return user
+
+
+_RESET_TOKENS: Dict[str, int] = {}
+
+
+class ForgotPasswordIn(BaseModel):
+    email: str
+
+
+class ResetPasswordIn(BaseModel):
+    token: str
+    password: str
+
+
+@router.post("/forgot-password")
+async def forgot_password(payload: ForgotPasswordIn, db: AsyncSession = Depends(get_session)):
+    user = await user_crud.get_by_email(db, payload.email)
+    token = uuid.uuid4().hex
+    if user:
+        _RESET_TOKENS[token] = user.id
+    return {
+        "message": "If the account exists, a reset token was issued.",
+        "reset_token": token if user else None,
+    }
+
+
+@router.post("/reset-password")
+async def reset_password(payload: ResetPasswordIn, db: AsyncSession = Depends(get_session)):
+    user_id = _RESET_TOKENS.pop(payload.token, None)
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    user = await user_crud.get_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    await user_crud.update(db, db_obj=user, obj_in={"password": payload.password})
+    return {"message": "Password updated"}

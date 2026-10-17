@@ -73,14 +73,36 @@ const ExceptionTable = ({ data, onRefresh, loading = false }) => {
     }
   };
   
-  const handleUploadPOC = (exceptionId) => {
-    // In a real app, you would open a file picker and upload
-    console.log("Uploading POC for exception:", exceptionId);
+  const handleUploadPOC = (exception) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.onchange = async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      try {
+        await exceptionApi.uploadPoc(exception.id, file);
+        if (onRefresh) onRefresh();
+      } catch (error) {
+        console.error("Error uploading exception POC:", error);
+        setUpdateError("Failed to upload POC.");
+      }
+    };
+    input.click();
   };
   
-  const handleDownloadPOC = (documentName) => {
-    // In a real app, you would trigger a download
-    console.log("Downloading POC document:", documentName);
+  const handleDownloadPOC = async (exception) => {
+    try {
+      const res = await exceptionApi.downloadPoc(exception.id);
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${(exception.name || "exception").replace(/\s+/g, "-").toLowerCase()}-poc`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading exception POC:", error);
+      setUpdateError("Failed to download POC.");
+    }
   };
   
   // Get color based on risk level
@@ -313,7 +335,7 @@ const ExceptionTable = ({ data, onRefresh, loading = false }) => {
                           variant="outlined"
                           size="small"
                           startIcon={<DownloadIcon />}
-                          onClick={() => handleDownloadPOC(exception.pocDocument)}
+                          onClick={() => handleDownloadPOC(exception)}
                           sx={{
                             borderColor: dashboardTheme.colors.info,
                             color: dashboardTheme.colors.info,
@@ -330,7 +352,7 @@ const ExceptionTable = ({ data, onRefresh, loading = false }) => {
                           variant="outlined"
                           size="small"
                           startIcon={<FileUploadIcon />}
-                          onClick={() => handleUploadPOC(exception.id)}
+                          onClick={() => handleUploadPOC(exception)}
                           sx={{
                             borderColor: dashboardTheme.colors.warning,
                             color: dashboardTheme.colors.warning,

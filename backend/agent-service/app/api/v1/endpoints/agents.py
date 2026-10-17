@@ -9,7 +9,11 @@ from app.db.database import get_db
 import uuid
 from datetime import datetime
 from pydantic import BaseModel
-import httpx
+try:
+    import httpx
+    HAS_HTTPX = True
+except ImportError:
+    HAS_HTTPX = False
 import asyncio
 
 router = APIRouter()
@@ -126,12 +130,6 @@ async def request_scan(agent_id: str, db: AsyncSession = Depends(get_db)):
         await db.commit()
         await db.refresh(scan_request)
 
-        # Create mock scan results for demo purposes
-        await create_mock_scan_results(agent_id)
-
-        # Mark scan request as completed
-        scan_request.status = "completed"
-        scan_request.completed_at = datetime.utcnow()
         await db.commit()
 
         return {

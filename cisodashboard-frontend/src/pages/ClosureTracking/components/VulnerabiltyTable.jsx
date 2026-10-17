@@ -29,8 +29,9 @@ import dashboardTheme from "../../../theme/dashboardTheme";
 
 // Risk level chips with colors
 const RiskChip = ({ risk }) => {
+  const level = String(risk || "medium");
   const getColor = () => {
-    switch (risk.toLowerCase()) {
+    switch (level.toLowerCase()) {
       case "critical":
         return dashboardTheme.colors.severity.critical;
       case "high":
@@ -46,7 +47,7 @@ const RiskChip = ({ risk }) => {
 
   return (
     <Chip
-      label={risk.toUpperCase()}
+      label={level.toUpperCase()}
       size="small"
       sx={{
         backgroundColor: `${getColor()}20`,

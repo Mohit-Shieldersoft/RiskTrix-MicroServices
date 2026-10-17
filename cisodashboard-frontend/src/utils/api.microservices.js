@@ -4,13 +4,9 @@
 import axios from "axios";
 import { getToken } from "./auth";
 
-// Microservice base URLs
-const APPLICATION_SERVICE_URL =
-  import.meta.env.VITE_APPLICATION_SERVICE_URL || "http://localhost:8001";
-const AUDIT_SERVICE_URL =
-  import.meta.env.VITE_AUDIT_SERVICE_URL || "http://localhost:8002";
-const MONOLITH_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const APPLICATION_SERVICE_URL = "http://127.0.0.1:8001";
+const AUDIT_SERVICE_URL = "http://127.0.0.1:8002";
+const MONOLITH_URL = "http://127.0.0.1:8000";
 
 // Define which paths belong to which service
 const SERVICE_ROUTES = {

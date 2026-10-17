@@ -240,7 +240,7 @@ const DelayTrackerTable = ({ data }) => {
                 );
               })}
             
-            {data.length === 0 && (
+            {(data || []).length === 0 && (
               <TableRow>
                 <TableCell colSpan={7} sx={{ textAlign: 'center', py: 3 }}>
                   <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -255,7 +255,7 @@ const DelayTrackerTable = ({ data }) => {
       
       <TablePagination
         component="div"
-        count={data.length}
+        count={(data || []).length}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={handleChangePage}

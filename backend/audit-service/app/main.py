@@ -11,7 +11,11 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from contextlib import asynccontextmanager
 import logging
 
+from sqlalchemy import text
+
 from app.core.config import settings
+from app.db.session import engine, Base
+from app.models import models as _audit_models  # noqa: F401
 from app.utils.logger import setup_logger
 from app.api.v1.api import api_router
 
@@ -25,11 +29,16 @@ async def lifespan(app: FastAPI):
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Port: {settings.PORT}")
     logger.info(f"Database: {settings.POSTGRES_SERVER}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}")
-    
-    # Event handlers can be registered here in the future
-    # from app.handlers import register_event_handlers
-    # register_event_handlers()
-    
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("CREATE SCHEMA IF NOT EXISTS schema_audit"))
+            await conn.run_sync(Base.metadata.create_all)
+            await conn.execute(text(
+                "ALTER TABLE schema_audit.exceptions ADD COLUMN IF NOT EXISTS poc_document VARCHAR(500)"
+            ))
+        logger.info("Audit schema tables are ready")
+    except Exception as exc:
+        logger.warning("Audit schema initialization note: %s", exc)
     yield
     
     logger.info("🛑 Shutting down Audit Service...")
@@ -61,7 +70,7 @@ def create_application() -> FastAPI:
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         allow_headers=["*"],
-        expose_headers=["X-Total-Count", "X-Page-Count"]
+        expose_headers=["X-Total-Count", "X-Page-Count", "Content-Disposition"]
     )
     
     # Include API router

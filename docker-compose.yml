@@ -409,6 +409,196 @@ services:
       retries: 3
       start_period: 40s
 
+  # Cloud Security Posture Management (CSPM) Service (Phase 3A)
+  cspm-service:
+    build:
+      context: ./backend/cspm-service
+      dockerfile: Dockerfile
+    container_name: cspm-service
+    restart: unless-stopped
+    environment:
+      # Service Config
+      PORT: 8014
+      ENVIRONMENT: development
+
+      # Database
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: risktrix_db
+      DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/risktrix_db
+
+      # Logging
+      LOG_LEVEL: INFO
+    volumes:
+      - ./backend/cspm-service:/app
+    ports:
+      - "8014:8014"
+    networks:
+      - micro-ciso-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8014/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Cloud Infrastructure Entitlement Management (CIEM) Service (Phase 3B)
+  ciem-service:
+    build:
+      context: ./backend/ciem-service
+      dockerfile: Dockerfile
+    container_name: ciem-service
+    restart: unless-stopped
+    environment:
+      # Service Config
+      PORT: 8015
+      ENVIRONMENT: development
+
+      # Database
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: risktrix_db
+      DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/risktrix_db
+
+      # Logging
+      LOG_LEVEL: INFO
+    volumes:
+      - ./backend/ciem-service:/app
+    ports:
+      - "8015:8015"
+    networks:
+      - micro-ciso-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8015/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Kubernetes & Container Security Service (Phase 3C)
+  k8s-container-service:
+    build:
+      context: ./backend/k8s-container-service
+      dockerfile: Dockerfile
+    container_name: k8s-container-service
+    restart: unless-stopped
+    environment:
+      # Service Config
+      PORT: 8016
+      ENVIRONMENT: development
+
+      # Database
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: risktrix_db
+      DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/risktrix_db
+
+      # Logging
+      LOG_LEVEL: INFO
+    volumes:
+      - ./backend/k8s-container-service:/app
+    ports:
+      - "8016:8016"
+    networks:
+      - micro-ciso-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8016/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Alert & Notification Service (Phase 3D)
+  alert-notification-service:
+    build:
+      context: ./backend/alert-notification-service
+      dockerfile: Dockerfile
+    container_name: alert-notification-service
+    restart: unless-stopped
+    environment:
+      # Service Config
+      PORT: 8017
+      ENVIRONMENT: development
+
+      # Database
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: risktrix_db
+      DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/risktrix_db
+
+      # Logging
+      LOG_LEVEL: INFO
+    volumes:
+      - ./backend/alert-notification-service:/app
+    ports:
+      - "8017:8017"
+    networks:
+      - micro-ciso-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8017/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  ip-scanner-service:
+    build:
+      context: ./backend/ip-scanner-service
+      dockerfile: Dockerfile
+    container_name: ip-scanner-service
+    restart: unless-stopped
+    environment:
+      PORT: 8018
+      ENVIRONMENT: development
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: risktrix_db
+      DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/risktrix_db
+      ALLOW_INTERNAL_SCAN: "false"
+      USE_NMAP: "true"
+      SCANNER_ASSUME_PRIVILEGED: "false"
+      LOG_LEVEL: INFO
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    volumes:
+      - ./backend/ip-scanner-service:/app
+    ports:
+      - "8018:8018"
+    networks:
+      - micro-ciso-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8018/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
 networks:
   micro-ciso-network:
     driver: bridge

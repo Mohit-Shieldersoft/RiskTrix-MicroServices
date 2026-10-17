@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link as RouterLink } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -49,7 +50,6 @@ import {
   CalendarToday,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
-import { generateYourBoardData } from "./mockData";
 import { fetchYourBoardMetrics } from "../../utils/yourboardApi";
 import { getEOSLDashboardData } from "../../utils/eoslApi";
 import {
@@ -95,8 +95,9 @@ const YourBoard = () => {
   const [assetsOpen, setAssetsOpen] = useState(false); // eslint-disable-line no-unused-vars
   const [assetsData, setAssetsData] = useState([]);
 
-  const data = generateYourBoardData();
-  const securityTech = data.securityTech;
+  const securityTech = assetsData.length
+    ? [{ name: "Asset Management", score: 0, status: "Live", assets: assetsData }]
+    : [];
 
   // Fetch real-time metrics from backend
   useEffect(() => {
@@ -112,7 +113,7 @@ const YourBoard = () => {
           setLastUpdated(response.data.lastUpdated || new Date().toISOString());
         } else {
           setMetrics([]);
-          setError("Using offline data - backend unavailable");
+          setError("Dashboard metrics are unavailable. Start the backend services.");
         }
       } catch (err) {
         console.error("Failed to load metrics:", err);
@@ -222,7 +223,7 @@ const YourBoard = () => {
   return (
     <Box
       component="main"
-      sx={{ p: 0, backgroundColor: "#f5f5f7", minHeight: "calc(100vh - 64px)" }}
+      sx={{ p: 0, backgroundColor: "transparent", minHeight: "calc(100vh - 64px)" }}
     >
       <Box
         sx={{
@@ -638,6 +639,11 @@ const YourBoard = () => {
                     </Typography>
                   </Box>
                   <Divider sx={{ mb: 2 }} />
+                  {securityTech.length === 0 && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      No live EOSL assets yet. Add assets from the EOSL module to see technology status here.
+                    </Typography>
+                  )}
 
                   {/* Security Tech Boxes */}
                   <Box
@@ -982,6 +988,54 @@ const YourBoard = () => {
                     View Full Report
                   </Button>
                 </Box>
+              </MotionPaper>
+
+              {/* Toxic Risk Correlation Executive Widget */}
+              <MotionPaper
+                variants={itemVariants}
+                elevation={0}
+                sx={{
+                  p: 3,
+                  mb: 3,
+                  borderRadius: 2,
+                  backgroundColor: "rgba(220, 38, 38, 0.03)",
+                  border: "1px solid rgba(220, 38, 38, 0.2)",
+                }}
+              >
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Shield sx={{ color: "#dc2626" }} />
+                    <Typography variant="h6" fontWeight="bold" sx={{ color: "#0f172a" }}>
+                      Toxic Risk Correlation Engine
+                    </Typography>
+                  </Box>
+                  <Chip label="2 TOXIC CRITICAL" color="error" size="small" sx={{ fontWeight: 800 }} />
+                </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Correlated 4-Pillar Risk Multiplier (CSPM × CVE × CIEM × Internet Exposure)
+                </Typography>
+                <Box sx={{ p: 2, borderRadius: 2, backgroundColor: "#ffffff", border: "1px solid #e2e8f0", mb: 2 }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+                    <Typography variant="subtitle2" fontWeight="bold">
+                      i-0a891f4c28e9 (Prod Web Gateway)
+                    </Typography>
+                    <Chip label="98.4 / 100 TOXIC" color="error" size="small" sx={{ fontWeight: 800 }} />
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    RCE CVE-2023-38606 + s3:* AdministratorAccess + Public IPv4 Exposed
+                  </Typography>
+                </Box>
+                <Button
+                  component={RouterLink}
+                  to="/cloud/toxic-risks"
+                  variant="contained"
+                  color="error"
+                  fullWidth
+                  size="small"
+                  sx={{ textTransform: "none", fontWeight: 700, borderRadius: 1.5 }}
+                >
+                  Inspect All Correlated Toxic Combinations ➔
+                </Button>
               </MotionPaper>
             </Grid>
 

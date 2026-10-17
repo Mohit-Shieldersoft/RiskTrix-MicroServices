@@ -9,7 +9,7 @@ from app.models.models import UserRole
 
 class UserBase(BaseModel):
     """Base user schema"""
-    email: EmailStr
+    email: str
     username: str
     full_name: Optional[str] = None
     phone: Optional[str] = None

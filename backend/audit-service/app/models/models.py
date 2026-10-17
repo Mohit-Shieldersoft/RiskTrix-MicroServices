@@ -234,6 +234,7 @@ class Exception(Base, TimestampMixin):
     approval_status = Column(String(50), nullable=True, default="pending")  # pending, approved, rejected
     approved_by_id = Column(Integer, nullable=True)  # Cross-service ref to users
     approved_at = Column(DateTime(timezone=True), nullable=True)
+    poc_document = Column(String(500), nullable=True)
     
     # Foreign keys (no FK constraint — users table lives in monolith)
     # organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)  # Cross-service reference
@@ -259,7 +260,7 @@ class Assignment(Base, TimestampMixin):
     # Foreign keys
     vendor_id = Column(Integer, ForeignKey("vendors.id"), nullable=True)
     standard_id = Column(Integer, ForeignKey("compliance_standards.id"), nullable=True)
-    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by_id = Column(Integer, nullable=True)  # Cross-service ref to users
     due_date = Column(Date, nullable=True)
 
     # Relationships

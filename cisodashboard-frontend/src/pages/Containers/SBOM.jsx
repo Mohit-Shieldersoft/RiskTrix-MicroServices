@@ -91,10 +91,7 @@ const SBOM = () => {
         const licRes = await api.get("/api/v1/containers/sbom/licenses");
         setLicenseSummary(licRes.data);
       } catch (e) {
-        setLicenseSummary({
-          summary: { HIGH_RISK_COPYLEFT: 1, PERMISSIVE: 10, TOTAL_PACKAGES: 11 },
-          breakdown: { MIT: 4, "Apache-2.0": 3, "BSD-3-Clause": 2, "GPL-2.0": 1, curl: 1 }
-        });
+        setLicenseSummary({ summary: {}, breakdown: {}, error: "License summary is unavailable." });
       }
 
       if (imagesList[0]) await fetchSbomTree(imagesList[0].id);
@@ -121,17 +118,13 @@ const SBOM = () => {
       const res = await api.get(`/api/v1/containers/sbom/export/${selectedImageId}?format=${format}`);
       setExportJsonContent(JSON.stringify(res.data, null, 2));
     } catch (err) {
-      const sampleExport = format === "spdx" ? {
-        spdxVersion: "SPDX-2.3",
-        dataLicense: "CC0-1.0",
-        name: selectedImageId,
-        packages: sbomData?.packages || []
-      } : {
-        bomFormat: "CycloneDX",
-        specVersion: "1.4",
-        components: sbomData?.packages || []
-      };
-      setExportJsonContent(JSON.stringify(sampleExport, null, 2));
+      setExportJsonContent("");
+      setExportModalOpen(false);
+      setNotification({
+        open: true,
+        message: err?.response?.data?.detail || "SBOM export failed. No sample file was generated.",
+        severity: "error",
+      });
     }
   };
 

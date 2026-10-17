@@ -1,13 +1,39 @@
-"""
-Activity Service Stub for Audit Service
-This is a temporary stub that logs activity instead of persisting to database.
-TODO: Implement proper activity logging via events or HTTP calls to shared service.
-"""
+"""Persist vendor/exception/certificate activity in schema_audit.audit_logs."""
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, Dict, Any
 import logging
 
+from app.models.models import AuditActivityLog
+
 logger = logging.getLogger(__name__)
+
+
+async def _persist(
+    db: AsyncSession,
+    activity_type: str,
+    entity_type: str,
+    entity_id: Optional[int],
+    entity_name: Optional[str],
+    user_id: Optional[int],
+    user_name: Optional[str],
+    description: str,
+    metadata: Optional[Dict[str, Any]] = None,
+) -> None:
+    try:
+        row = AuditActivityLog(
+            activity_type=activity_type,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            entity_name=entity_name,
+            user_id=user_id,
+            user_name=user_name,
+            description=description,
+            extra_metadata=metadata or {},
+        )
+        db.add(row)
+        await db.commit()
+    except Exception as exc:
+        logger.error("Failed to persist activity log: %s", exc)
 
 
 async def log_vendor_activity(
@@ -20,18 +46,11 @@ async def log_vendor_activity(
     description: str,
     metadata: Optional[Dict[str, Any]] = None
 ) -> None:
-    """
-    Log vendor-related activity.
-    
-    This is a stub implementation that only logs to application logs.
-    In production, this should publish an event or call a shared activity service.
-    """
     logger.info(
         f"ACTIVITY: {activity_type} | Vendor: {vendor_name} ({vendor_id}) | "
         f"User: {user_name} ({user_id}) | {description}"
     )
-    if metadata:
-        logger.debug(f"Activity metadata: {metadata}")
+    await _persist(db, activity_type, "vendor", vendor_id, vendor_name, user_id, user_name, description, metadata)
 
 
 async def log_vendor_update_activity(
@@ -42,17 +61,13 @@ async def log_vendor_update_activity(
     user_id: Optional[int],
     user_name: str
 ) -> None:
-    """
-    Log vendor update activity.
-    
-    This is a stub implementation that only logs to application logs.
-    """
     fields_str = ", ".join(updated_fields.keys())
+    description = f"Updated fields: {fields_str}"
     logger.info(
         f"ACTIVITY: vendor_updated | Vendor: {vendor_name} ({vendor_id}) | "
-        f"User: {user_name} ({user_id}) | Updated fields: {fields_str}"
+        f"User: {user_name} ({user_id}) | {description}"
     )
-    logger.debug(f"Updated values: {updated_fields}")
+    await _persist(db, "vendor_updated", "vendor", vendor_id, vendor_name, user_id, user_name, description, updated_fields)
 
 
 async def log_exception_activity(
@@ -66,17 +81,12 @@ async def log_exception_activity(
     description: str,
     extra_data: Optional[Dict[str, Any]] = None
 ) -> None:
-    """
-    Log exception-related activity.
-    
-    This is a stub implementation that only logs to application logs.
-    """
     logger.info(
         f"ACTIVITY: {activity_type} | Exception: {exception_name} ({exception_id}) | "
         f"Severity: {severity} | User: {user_name} ({user_id}) | {description}"
     )
-    if extra_data:
-        logger.debug(f"Activity extra data: {extra_data}")
+    meta = {"severity": severity, **(extra_data or {})}
+    await _persist(db, activity_type, "exception", exception_id, exception_name, user_id, user_name, description, meta)
 
 
 async def log_exception_update_activity(
@@ -87,17 +97,13 @@ async def log_exception_update_activity(
     user_id: Optional[int],
     user_name: str
 ) -> None:
-    """
-    Log exception update activity.
-    
-    This is a stub implementation that only logs to application logs.
-    """
     fields_str = ", ".join(updated_fields.keys())
+    description = f"Updated fields: {fields_str}"
     logger.info(
         f"ACTIVITY: exception_updated | Exception: {exception_name} ({exception_id}) | "
-        f"User: {user_name} ({user_id}) | Updated fields: {fields_str}"
+        f"User: {user_name} ({user_id}) | {description}"
     )
-    logger.debug(f"Updated values: {updated_fields}")
+    await _persist(db, "exception_updated", "exception", exception_id, exception_name, user_id, user_name, description, updated_fields)
 
 
 async def log_certificate_activity(
@@ -112,15 +118,10 @@ async def log_certificate_activity(
     description: str,
     metadata: Optional[Dict[str, Any]] = None
 ) -> None:
-    """
-    Log certificate-related activity.
-    
-    This is a stub implementation that only logs to application logs.
-    """
     vendor_info = f" | Vendor: {vendor_name} ({vendor_id})" if vendor_id else ""
     logger.info(
         f"ACTIVITY: {activity_type} | Certificate: {certificate_name} ({certificate_id}){vendor_info} | "
         f"User: {user_name} ({user_id}) | {description}"
     )
-    if metadata:
-        logger.debug(f"Activity metadata: {metadata}")
+    meta = {"vendor_id": vendor_id, "vendor_name": vendor_name, **(metadata or {})}
+    await _persist(db, activity_type, "certificate", certificate_id, certificate_name, user_id, user_name, description, meta)

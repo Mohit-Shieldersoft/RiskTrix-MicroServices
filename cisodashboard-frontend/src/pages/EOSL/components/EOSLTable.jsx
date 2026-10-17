@@ -13,6 +13,7 @@ import WatchLaterIcon from '@mui/icons-material/WatchLater';
 import dashboardTheme from '../../../theme/dashboardTheme';
 import Toast from '../../../components/common/Toast';
 import { useToast } from '../../../components/common/useToast';
+import api from '../../../utils/api';
 
 const EOSLTable = ({ data, loading }) => {
   const [filteredData, setFilteredData] = useState([]);
@@ -42,17 +43,16 @@ const EOSLTable = ({ data, loading }) => {
   };
   
   // Handle sending reminder
-  const handleSendReminder = (assetId) => {
-    // Set sending state
+  const handleSendReminder = async (assetId, ownerEmail) => {
     setSendingMap(prev => ({ ...prev, [assetId]: true }));
-    
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await api.post("/api/v1/reminders/send", { assetId, email: ownerEmail });
+      showToast("Reminder sent", "success");
+    } catch (err) {
+      showToast(err?.response?.data?.detail || "Reminder could not be sent (SMTP and owner email required)", "error");
+    } finally {
       setSendingMap(prev => ({ ...prev, [assetId]: false }));
-      
-      // Show success message
-      showToast('Reminder sent successfully', 'success');
-    }, 1500);
+    }
   };
   
   // Get color based on EOSL type
@@ -209,7 +209,7 @@ const EOSLTable = ({ data, loading }) => {
                         color="primary"
                         disabled={isSending}
                         startIcon={isSending ? null : (asset.reminderSent ? <DoneIcon /> : <SendIcon />)}
-                        onClick={() => handleSendReminder(asset.id)}
+                        onClick={() => handleSendReminder(asset.id, asset.ownerEmail || asset.owner_email)}
                         sx={{
                           minWidth: 90,
                           background: asset.reminderSent ? '#BBDEFB' : 'linear-gradient(45deg, #1976D2 30%, #42A5F5 90%)',

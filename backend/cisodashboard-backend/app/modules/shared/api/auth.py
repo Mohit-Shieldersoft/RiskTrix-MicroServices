@@ -174,7 +174,11 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_session))
     if existing_username:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
     payload.is_superuser = False
-    payload.role = UserRole.VIEWER
+    requested = payload.role
+    if requested in (UserRole.SECURITY_ANALYST, UserRole.VIEWER):
+        payload.role = requested
+    else:
+        payload.role = UserRole.VIEWER
     try:
         user = await user_crud.create(db, obj_in=payload)
     except ValueError as exc:

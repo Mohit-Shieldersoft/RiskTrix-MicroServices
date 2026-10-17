@@ -45,11 +45,11 @@ class AzureCollector:
                 logger.info(f"Executing LIVE Azure SDK scan for subscription {self.subscription_id}...")
                 return self._scan_live_azure()
             except Exception as e:
-                logger.warning(f"Live Azure scan error: {e}. Falling back to live-structured telemetry...")
-                return self._scan_fallback_azure()
+                logger.warning(f"Live Azure scan error: {e}. Returning empty results (no synthetic telemetry).")
+                return [], []
         else:
-            logger.info(f"No live Azure API keys detected. Utilizing live-structured telemetry collector for subscription {self.subscription_id}...")
-            return self._scan_fallback_azure()
+            logger.info(f"No Azure credentials for subscription {self.subscription_id}. Connect credentials to scan.")
+            return [], []
 
     def _scan_live_azure(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         credential = DefaultAzureCredential()
@@ -101,7 +101,11 @@ class AzureCollector:
         return assets, findings
 
     def _scan_fallback_azure(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
-        """Live-structured fallback telemetry when Azure credentials are not active."""
+        """Removed: empty tenants stay empty."""
+        return [], []
+
+    def _unused_scan_fallback_azure(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """Not called."""
         st_name = f"stlogs{self.subscription_id[:8].replace('-', '')}"
         res_st_id = f"/subscriptions/{self.subscription_id}/resourceGroups/rg-prod/providers/Microsoft.Storage/storageAccounts/{st_name}"
         res_vm_id = f"/subscriptions/{self.subscription_id}/resourceGroups/rg-prod/providers/Microsoft.Compute/virtualMachines/vm-app-eastus-01"

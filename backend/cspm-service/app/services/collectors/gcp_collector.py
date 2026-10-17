@@ -41,11 +41,11 @@ class GCPCollector:
                 logger.info(f"Executing LIVE GCP SDK scan for project {self.project_id}...")
                 return self._scan_live_gcp()
             except Exception as e:
-                logger.warning(f"Live GCP scan error: {e}. Falling back to live-structured telemetry...")
-                return self._scan_fallback_gcp()
+                logger.warning(f"Live GCP scan error: {e}. Returning empty results (no synthetic telemetry).")
+                return [], []
         else:
-            logger.info(f"No live GCP service account keys detected. Utilizing live-structured telemetry collector for project {self.project_id}...")
-            return self._scan_fallback_gcp()
+            logger.info(f"No GCP credentials for project {self.project_id}. Connect credentials to scan.")
+            return [], []
 
     def _scan_live_gcp(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         client = asset_v1.AssetServiceClient()
@@ -108,7 +108,11 @@ class GCPCollector:
         return assets, findings
 
     def _scan_fallback_gcp(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
-        """Live-structured fallback telemetry when GCP credentials are not active."""
+        """Removed: empty tenants stay empty."""
+        return [], []
+
+    def _unused_scan_fallback_gcp(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """Not called."""
         sql_name = f"risktrix-prod-db-{self.project_id[:6]}"
         res_sql_id = f"//sqladmin.googleapis.com/projects/{self.project_id}/instances/{sql_name}"
         res_gcs_id = f"//storage.googleapis.com/gcs-raw-telemetry-{self.project_id[:6]}"

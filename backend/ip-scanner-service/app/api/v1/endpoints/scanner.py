@@ -448,10 +448,33 @@ async def scan_report_export(scan_id: str, fmt: str = "json", db: AsyncSession =
         raise HTTPException(status_code=404, detail="Scan not found")
     payload = _serialize_scan(row)
     if fmt.lower() == "pdf":
-        from fastapi.responses import HTMLResponse
-        html = f"""<html><body><h1>IP Scan Report {payload.get('target')}</h1>
-        <p>{payload.get('summary')}</p><pre>{json.dumps(payload, default=str, indent=2)}</pre></body></html>"""
-        return HTMLResponse(content=html, headers={"Content-Disposition": f"attachment; filename=scan-{scan_id}.html"})
+        try:
+            from io import BytesIO
+            from fastapi.responses import Response
+            from reportlab.lib.pagesizes import A4
+            from reportlab.lib.styles import getSampleStyleSheet
+            from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Preformatted
+
+            buf = BytesIO()
+            doc = SimpleDocTemplate(buf, pagesize=A4)
+            styles = getSampleStyleSheet()
+            story = [
+                Paragraph(f"IP Scan Report: {payload.get('target')}", styles["Title"]),
+                Spacer(1, 12),
+                Paragraph(str(payload.get("summary") or ""), styles["Normal"]),
+                Spacer(1, 12),
+                Preformatted(json.dumps(payload, default=str, indent=2)[:8000], styles["Code"]),
+            ]
+            doc.build(story)
+            return Response(
+                content=buf.getvalue(),
+                media_type="application/pdf",
+                headers={"Content-Disposition": f"attachment; filename=scan-{scan_id}.pdf"},
+            )
+        except ImportError:
+            raise HTTPException(status_code=501, detail="PDF export requires ReportLab. Use fmt=json until it is installed.")
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"PDF export failed: {exc}")
     return payload
 
 
@@ -605,6 +628,8 @@ async def scan_report(scan_id: str, fmt: str = "json", format: Optional[str] = N
                 row.risk_grade,
             ])
         return {"format": "csv", "content": buffer.getvalue()}
+    if chosen == "pdf":
+        return await scan_report_export(scan_id, fmt="pdf", db=db)
     return payload
 
 

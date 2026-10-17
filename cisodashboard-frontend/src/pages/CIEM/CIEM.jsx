@@ -128,7 +128,7 @@ const CIEM = () => {
       );
       setNotification({
         open: true,
-        message: `Applied Least Privilege Policy for ${identityId}! Privileges resized.`,
+        message: `Guided least-privilege action recorded for ${identityId}. Cloud was not mutated.`,
         severity: "success",
       });
     } catch (err) {
@@ -194,6 +194,9 @@ const CIEM = () => {
           <Typography variant="body2" sx={{ color: "#64748b", mt: 0.5 }}>
             IAM Identity Graph, Effective Permissions vs CloudTrail Audit Logs & Dormant Privilege Detector
           </Typography>
+          <Alert severity="info" sx={{ mt: 1.5 }}>
+            Least-privilege actions are recorded; they do not mutate the cloud account.
+          </Alert>
         </Box>
 
         <Box sx={{ display: "flex", gap: 1 }}>

@@ -42,11 +42,11 @@ class AWSCollector:
                 logger.info(f"Executing LIVE AWS SDK scan for account {self.account_id} in {self.region}...")
                 return self._scan_live_aws()
             except Exception as e:
-                logger.warning(f"Live AWS scan error: {e}. Falling back to live-structured telemetry...")
-                return self._scan_fallback_aws()
+                logger.warning(f"Live AWS scan error: {e}. Returning empty results (no synthetic telemetry).")
+                return [], []
         else:
-            logger.info(f"No live AWS API keys detected. Utilizing live-structured telemetry collector for account {self.account_id}...")
-            return self._scan_fallback_aws()
+            logger.info(f"No AWS credentials for account {self.account_id}. Connect credentials to scan.")
+            return [], []
 
     def _scan_live_aws(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         session = boto3.Session(
@@ -215,7 +215,11 @@ class AWSCollector:
         return assets, findings
 
     def _scan_fallback_aws(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
-        """Live-structured fallback telemetry when AWS credentials are not active."""
+        """Removed: empty tenants stay empty. Demo data comes from DEMO-* provision only."""
+        return [], []
+
+    def _unused_scan_fallback_aws(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """Kept only so historical comments remain searchable; not called."""
         bucket_name = f"prod-customer-pii-backups-{self.account_id[:4]}"
         sg_id = f"sg-08f3a9a{self.account_id[:4]}21"
         res_s3_arn = f"arn:aws:s3:::{bucket_name}"

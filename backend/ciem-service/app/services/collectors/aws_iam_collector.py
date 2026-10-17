@@ -41,11 +41,11 @@ class AWS_IAMCollector:
                 logger.info(f"Executing LIVE AWS IAM get_account_authorization_details for account {self.account_id}...")
                 return self._collect_live_iam()
             except Exception as e:
-                logger.warning(f"Live AWS IAM scan error: {e}. Utilizing live-structured telemetry stream...")
-                return self._collect_telemetry_iam()
+                logger.warning(f"Live AWS IAM scan error: {e}. Returning empty (no synthetic identities).")
+                return [], [], []
         else:
-            logger.info(f"Utilizing live-structured AWS IAM telemetry collector for account {self.account_id}...")
-            return self._collect_telemetry_iam()
+            logger.info(f"No AWS IAM credentials for account {self.account_id}. Connect CSPM account credentials to sync.")
+            return [], [], []
 
     def _collect_live_iam(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
         session = boto3.Session(

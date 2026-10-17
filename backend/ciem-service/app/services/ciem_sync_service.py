@@ -4,6 +4,7 @@ Aggregates AWS IAM, Azure Entra ID, and GCP IAM telemetry and updates IAMGraphEn
 """
 import json
 import logging
+import os
 from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -16,20 +17,66 @@ from app.services.seed_data import DEFAULT_IDENTITIES
 
 logger = logging.getLogger("ciem.sync_service")
 
+CSPM_SERVICE_URL = os.getenv("CSPM_SERVICE_URL", "http://cspm-service:8014")
+
+
+async def _cspm_cloud_accounts() -> List[Dict[str, Any]]:
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            res = await client.get(f"{CSPM_SERVICE_URL}/api/v1/cloud/accounts")
+            if res.status_code >= 400:
+                logger.warning("CSPM accounts fetch failed: %s", res.status_code)
+                return []
+            data = res.json()
+            return data if isinstance(data, list) else []
+    except Exception as exc:
+        logger.warning("Could not load CSPM cloud-account credentials: %s", exc)
+        return []
+
 
 class CIEMSyncService:
     """Orchestrator for executing multi-cloud identity and entitlement ingestion."""
 
     async def run_sync(self, db: AsyncSession = None) -> Dict[str, Any]:
-        logger.info("🚀 Triggering Live CIEM Ingestion Sync (AWS IAM, Azure Entra ID, GCP IAM)...")
+        logger.info("Triggering CIEM sync using CSPM cloud-account credentials...")
 
-        aws_coll = AWS_IAMCollector()
-        azure_coll = Azure_IAMCollector()
-        gcp_coll = GCP_IAMCollector()
+        accounts = await _cspm_cloud_accounts()
+        aws_identities, aws_entitlements, aws_edges = [], [], []
+        azure_identities, azure_entitlements, azure_edges = [], [], []
+        gcp_identities, gcp_entitlements, gcp_edges = [], [], []
 
-        aws_identities, aws_entitlements, aws_edges = aws_coll.collect()
-        azure_identities, azure_entitlements, azure_edges = azure_coll.collect()
-        gcp_identities, gcp_entitlements, gcp_edges = gcp_coll.collect()
+        for acct in accounts:
+            provider = str(acct.get("provider") or "").upper()
+            creds = acct.get("credentials") or {}
+            account_id = acct.get("account_id") or acct.get("id") or ""
+            region = acct.get("region") or "us-east-1"
+            if provider == "AWS":
+                coll = AWS_IAMCollector(account_id=account_id, region=region, credentials=creds)
+                i, e, g = coll.collect()
+                aws_identities += i
+                aws_entitlements += e
+                aws_edges += g
+            elif provider == "AZURE":
+                coll = Azure_IAMCollector(subscription_id=account_id, credentials=creds)
+                i, e, g = coll.collect()
+                azure_identities += i
+                azure_entitlements += e
+                azure_edges += g
+            elif provider == "GCP":
+                coll = GCP_IAMCollector(project_id=account_id, credentials=creds)
+                i, e, g = coll.collect()
+                gcp_identities += i
+                gcp_entitlements += e
+                gcp_edges += g
+
+        if not accounts:
+            aws_coll = AWS_IAMCollector()
+            azure_coll = Azure_IAMCollector()
+            gcp_coll = GCP_IAMCollector()
+            aws_identities, aws_entitlements, aws_edges = aws_coll.collect()
+            azure_identities, azure_entitlements, azure_edges = azure_coll.collect()
+            gcp_identities, gcp_entitlements, gcp_edges = gcp_coll.collect()
 
         all_identities = aws_identities + azure_identities + gcp_identities
         all_entitlements = aws_entitlements + azure_entitlements + gcp_entitlements

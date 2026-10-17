@@ -63,6 +63,7 @@ import PlatformAudit from "./pages/PlatformAudit/PlatformAudit";
 import { NetworkPage, DatabasesPage, ComputePage } from "./pages/CloudInventory/CloudInventory";
 import { getToken, getUserProfile } from "./utils/auth";
 import ErrorBoundary from "./components/common/ErrorBoundary";
+import { RBACProvider } from "./context/RBACContext";
 // Create a Material UI theme based on our dashboard theme
 import dashboardTheme from "./theme/dashboardTheme";
 
@@ -228,6 +229,7 @@ function App() {
   return (
     <ThemeProvider theme={muiTheme}>
       <CssBaseline />
+      <RBACProvider>
       <Router>
         <ErrorBoundary>
         <Routes>
@@ -776,6 +778,7 @@ function App() {
         </Routes>
         </ErrorBoundary>
       </Router>
+      </RBACProvider>
     </ThemeProvider>
   );
 }

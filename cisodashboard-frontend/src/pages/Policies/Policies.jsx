@@ -97,12 +97,12 @@ const Policies = () => {
       });
     } catch (err) {
       setPolicies((prev) =>
-        prev.map((p) => (p.policy_id === policyId ? { ...p, enabled: newEnabled } : p))
+        prev.map((p) => (p.policy_id === policyId ? { ...p, enabled: currentEnabled } : p))
       );
       setNotification({
         open: true,
-        message: `Policy ${policyId} ${newEnabled ? "ENABLED" : "DISABLED"}`,
-        severity: newEnabled ? "success" : "info",
+        message: err?.response?.data?.detail || `Could not update policy ${policyId}`,
+        severity: "error",
       });
     }
   };
@@ -622,13 +622,23 @@ const Policies = () => {
               <Button
                 variant="contained"
                 startIcon={<PlayArrowIcon />}
-                onClick={() => {
-                  setNotification({
-                    open: true,
-                    message: `Triggered automated remediation playbook for ${selectedPolicyModal.rule_id}!`,
-                    severity: "success",
-                  });
-                  setSelectedPolicyModal(null);
+                onClick={async () => {
+                  const policyId = selectedPolicyModal.rule_id || selectedPolicyModal.policy_id;
+                  try {
+                    const res = await api.post(`/api/v1/cloud/policies/${policyId}/playbook`);
+                    setNotification({
+                      open: true,
+                      message: res.data?.message || `Guided playbook recorded for ${policyId}. Cloud was not mutated.`,
+                      severity: "success",
+                    });
+                    setSelectedPolicyModal(null);
+                  } catch (err) {
+                    setNotification({
+                      open: true,
+                      message: err?.response?.data?.detail || `Could not record playbook for ${policyId}`,
+                      severity: "error",
+                    });
+                  }
                 }}
                 sx={{
                   textTransform: "none",

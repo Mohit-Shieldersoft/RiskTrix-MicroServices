@@ -83,7 +83,7 @@ const AttackPaths = () => {
       if (selectedPath?.path_id === pathId) {
         setSelectedPath((prev) => ({ ...prev, status: "SEVERED" }));
       }
-      setSnack({ open: true, message: `Choke-point remediation executed for ${pathId}. Attack vector severed!`, severity: "success" });
+      setSnack({ open: true, message: `Guided choke-point recorded for ${pathId}. Cloud was not mutated.`, severity: "success" });
     } catch (err) {
       setSnack({ open: true, message: err.response?.data?.detail || "Remediation failed", severity: "error" });
     } finally {
@@ -110,6 +110,9 @@ const AttackPaths = () => {
               <Typography variant="body2" sx={{ color: "#64748b" }}>
                 Multi-hop toxic vector visualizer, blast radius calculation, and choke-point remediation
               </Typography>
+              <Alert severity="info" sx={{ mt: 1.5 }}>
+                Choke-point remediations are recorded; they do not mutate the cloud account.
+              </Alert>
             </Box>
           </Box>
         </Box>

@@ -338,11 +338,25 @@ async def send_vendor_notification(
                 detail=f"Vendor with id {vendor_id} not found"
             )
         
-        # TODO: Implement actual notification logic (email, SMS, etc.)
-        # For now, just return success response
-        
         message = notification_data.get("message", "Compliance renewal reminder")
-        
+        to_email = vendor.contact_email
+        if not to_email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Vendor has no contact email",
+            )
+        from app.core.email import email_service
+        sent = email_service.send_email(
+            to_email=to_email,
+            subject=f"RiskTrix vendor notice — {vendor.name}",
+            html_content=f"<p>{message}</p><p>Vendor: {vendor.name}</p>",
+            plain_content=f"{message}\nVendor: {vendor.name}",
+        )
+        if not sent:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="SMTP is not configured or the email could not be sent",
+            )
         return {
             "success": True,
             "message": f"Notification sent to {vendor.name}",

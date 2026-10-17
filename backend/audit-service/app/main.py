@@ -36,6 +36,24 @@ async def lifespan(app: FastAPI):
             await conn.execute(text(
                 "ALTER TABLE schema_audit.exceptions ADD COLUMN IF NOT EXISTS poc_document VARCHAR(500)"
             ))
+            # Users/orgs/apps live in other services. Drop leftover cross-schema FKs.
+            for table, constraint in (
+                ("assignments", "assignments_created_by_id_fkey"),
+                ("exceptions", "exceptions_created_by_id_fkey"),
+                ("exceptions", "exceptions_assigned_to_id_fkey"),
+                ("exceptions", "exceptions_approved_by_id_fkey"),
+                ("exceptions", "exceptions_organization_id_fkey"),
+                ("assessments", "assessments_assessor_id_fkey"),
+                ("audit_logs", "audit_logs_user_id_fkey"),
+                ("compliance_records", "compliance_records_assessor_id_fkey"),
+                ("compliance_records", "compliance_records_application_id_fkey"),
+                ("vendor_compliance_records", "vendor_compliance_records_assessor_id_fkey"),
+                ("vendor_certificates", "vendor_certificates_application_id_fkey"),
+                ("vendors", "vendors_organization_id_fkey"),
+            ):
+                await conn.execute(text(
+                    f"ALTER TABLE schema_audit.{table} DROP CONSTRAINT IF EXISTS {constraint}"
+                ))
         logger.info("Audit schema tables are ready")
     except Exception as exc:
         logger.warning("Audit schema initialization note: %s", exc)

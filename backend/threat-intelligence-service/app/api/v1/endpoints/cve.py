@@ -33,10 +33,6 @@ async def list_all_cve_findings(
             query = query.where(VulnerabilityFeedItem.product.ilike(f"%{product}%"))
         result = await db.execute(query)
         items = result.scalars().all()
-        if not items:
-            await threat_sync_service.run_sync(db=db)
-            result = await db.execute(query)
-            items = result.scalars().all()
         return [CVEItemResponse.model_validate(i) for i in items]
     except Exception:
         return []
@@ -61,20 +57,27 @@ async def lookup_cve(
         result = await db.execute(query)
         items = result.scalars().all()
 
-        if not items:
-            await threat_sync_service.run_sync(db=db)
-            result = await db.execute(query)
-            items = result.scalars().all()
-
         if cve_id:
             items = [i for i in items if cve_id.lower() in i.cve_id.lower()]
         elif binary_name:
             items = [i for i in items if binary_name.lower() in (i.product or "").lower() or binary_name.lower() in (i.summary or "").lower()]
 
         cve_responses = [CVEItemResponse.model_validate(i) for i in items]
-        return CVELookupResponse(total_found=len(cve_responses), cves=cve_responses)
+        return CVELookupResponse(
+            total_found=len(cve_responses),
+            cves=cve_responses,
+            source="database",
+            nvd_queried=False,
+            message=None if cve_responses else "No matching CVE in the local database. NVD was not queried.",
+        )
     except Exception:
-        return CVELookupResponse(total_found=0, cves=[])
+        return CVELookupResponse(
+            total_found=0,
+            cves=[],
+            source="database",
+            nvd_queried=False,
+            message="CVE lookup failed against the local database. NVD was not queried.",
+        )
 
 
 @router.post("/sync", status_code=status.HTTP_200_OK)
@@ -93,10 +96,6 @@ async def list_cisa_kev_vulnerabilities(db: AsyncSession = Depends(get_db)):
         query = select(VulnerabilityFeedItem).where(VulnerabilityFeedItem.is_cisa_kev == True)
         result = await db.execute(query)
         items = result.scalars().all()
-        if not items:
-            await threat_sync_service.run_sync(db=db)
-            result = await db.execute(query)
-            items = result.scalars().all()
         return [CVEItemResponse.model_validate(i) for i in items if i.is_cisa_kev]
     except Exception:
         return []
@@ -112,10 +111,6 @@ async def list_top_epss_exploits(
         query = select(VulnerabilityFeedItem).where(VulnerabilityFeedItem.epss_score >= min_epss).order_by(VulnerabilityFeedItem.epss_score.desc())
         result = await db.execute(query)
         items = result.scalars().all()
-        if not items:
-            await threat_sync_service.run_sync(db=db)
-            result = await db.execute(query)
-            items = result.scalars().all()
         return [CVEItemResponse.model_validate(i) for i in items if i.epss_score >= min_epss]
     except Exception:
         return []

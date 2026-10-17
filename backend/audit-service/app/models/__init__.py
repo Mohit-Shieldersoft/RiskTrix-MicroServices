@@ -15,6 +15,7 @@ from app.models.models import (
     Exception,
     Assignment,
     Assessment,
+    AuditActivityLog,
 )
 
 __all__ = [
@@ -32,4 +33,5 @@ __all__ = [
     "Exception",
     "Assignment",
     "Assessment",
+    "AuditActivityLog",
 ]

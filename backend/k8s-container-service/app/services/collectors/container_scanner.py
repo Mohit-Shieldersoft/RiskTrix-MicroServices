@@ -50,9 +50,8 @@ class ContainerScanner:
         if self.is_docker_socket_available():
             logger.info("Executing LIVE Docker Daemon socket container scan...")
             return self._scan_live_docker()
-        else:
-            logger.info("Executing Live Engine container image CVE & CycloneDX SBOM analysis...")
-            return self._scan_engine_container_images()
+        logger.info("Docker is not available. Returning empty images (no synthetic CVE lists).")
+        return [], {}
 
     def _scan_live_docker(self) -> Tuple[List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]:
         """Queries active Docker daemon for local container images and analyzes packages."""
@@ -96,27 +95,27 @@ class ContainerScanner:
                             "tag": tag,
                             "size_mb": size_mb,
                             "critical_cve_count": 0,
-                            "high_cve_count": 1,
-                            "medium_cve_count": 3,
-                            "low_cve_count": 5,
-                            "has_sbom": True,
+                            "high_cve_count": 0,
+                            "medium_cve_count": 0,
+                            "low_cve_count": 0,
+                            "has_sbom": False,
                             "created_at": datetime.utcnow()
                         })
 
-                        sbom_map[img_key] = [
-                            {"id": str(uuid.uuid4()), "image_id": img_key, "package_name": "openssl", "version": "3.0.11", "ecosystem": "DEB", "license": "Apache-2.0", "cve_id": "CVE-2023-5678", "severity": "HIGH"},
-                            {"id": str(uuid.uuid4()), "image_id": img_key, "package_name": "curl", "version": "8.4.0", "ecosystem": "DEB", "license": "curl", "cve_id": None, "severity": None},
-                        ]
+                        sbom_map[img_key] = []
 
         except Exception as e:
             logger.warning(f"Error querying live Docker daemon: {e}")
 
         if not images_out:
-            return self._scan_engine_container_images()
+            return [], {}
 
         return images_out, sbom_map
 
     def _scan_engine_container_images(self) -> Tuple[List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]:
+        return [], {}
+
+    def _unused_scan_engine_container_images(self) -> Tuple[List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]:
         """Live engine vulnerability analysis and CycloneDX 1.4 SBOM generation for enterprise container images."""
         images = [
             {

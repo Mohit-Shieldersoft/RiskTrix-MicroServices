@@ -130,6 +130,7 @@ class VendorResponse(VendorBase):
     # Related data
     compliance_records_count: Optional[int] = 0
     active_vulnerabilities_count: Optional[int] = 0
+    message: Optional[str] = None
     
     class Config:
         from_attributes = True

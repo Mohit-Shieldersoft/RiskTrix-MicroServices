@@ -25,7 +25,7 @@ const DelayTrackerTable = ({ data }) => {
   
   const handleSendNotification = async (id) => {
     // Extract numeric vendor ID from "VEN-XXX" format
-    const vendorId = parseInt(id.split('-')[1]);
+    const vendorId = Number(id) || Number(String(id).replace(/\D/g, ""));
     
     setSentNotifications(prev => [...prev, id]);
     

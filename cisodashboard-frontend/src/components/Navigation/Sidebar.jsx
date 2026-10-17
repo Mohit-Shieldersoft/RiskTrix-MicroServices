@@ -42,6 +42,7 @@ import LockIcon from "@mui/icons-material/Lock";
 import NetworkCheckIcon from "@mui/icons-material/NetworkCheck";
 
 import dashboardTheme from "../../theme/dashboardTheme";
+import { getUserProfile } from "../../utils/auth";
 
 const Sidebar = ({ open, onClose }) => {
   const location = useLocation(); // Use location hook
@@ -51,6 +52,8 @@ const Sidebar = ({ open, onClose }) => {
   const [openSubmenus, setOpenSubmenus] = useState({});
 
   // Define menu structure with children for submenus
+  const isAdmin = String(getUserProfile()?.role || "").toUpperCase() === "ADMIN";
+
   const menuItems = [
     {
       text: "Dashboard",
@@ -236,7 +239,7 @@ const Sidebar = ({ open, onClose }) => {
       icon: <SettingsIcon />,
       path: "/admin/users",
     },
-  ];
+  ].filter((item) => isAdmin || (item.path !== "/admin/roles" && item.path !== "/admin/users"));
 
   // Function to handle submenu toggle
   const handleSubmenuClick = (text) => {

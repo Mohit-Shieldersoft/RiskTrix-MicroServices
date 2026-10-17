@@ -216,7 +216,7 @@ const Signup = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 4, // 👈 default Viewer / lowest role
+    role: 'VIEWER',
   });
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -260,6 +260,7 @@ const handleChange = e => {
         username: (email || "").split("@")[0],
         full_name: email,
         password,
+        role: role === "SECURITY_ANALYST" ? "SECURITY_ANALYST" : "VIEWER",
       });
       setSuccessMsg("Signup successful. Redirecting to login...");
       setTimeout(() => navigate("/login"), 1200);
@@ -370,12 +371,10 @@ const handleChange = e => {
               id="role"
               value={role}
               onChange={handleChange}
-              helperText="Choose account type"
+              helperText="New accounts cannot self-assign Admin. An admin can raise your role later."
             >
-              <MenuItem value={1}>Admin</MenuItem>
-              <MenuItem value={2}>Doctor</MenuItem>
-              <MenuItem value={3}>Patient</MenuItem>
-              <MenuItem value={4}>Viewer / Regular User</MenuItem>
+              <MenuItem value="VIEWER">Viewer</MenuItem>
+              <MenuItem value="SECURITY_ANALYST">Security Analyst</MenuItem>
             </TextField>
 
             <Button

@@ -1,5 +1,8 @@
 """Reminder service for application reminder management"""
 import logging
+import os
+import smtplib
+from email.mime.text import MIMEText
 from typing import Any, Dict, List, Optional
 from datetime import datetime, date, timezone
 from collections import defaultdict
@@ -250,24 +253,38 @@ class ReminderService:
         )
     
     @staticmethod
+    def _smtp_configured() -> bool:
+        return bool(os.getenv("SMTP_USERNAME") and os.getenv("SMTP_PASSWORD"))
+
+    @staticmethod
+    def _send_smtp(to_email: str, subject: str, body: str) -> None:
+        if not ReminderService._smtp_configured():
+            raise RuntimeError("SMTP is not configured. Set SMTP_USERNAME and SMTP_PASSWORD.")
+        if not to_email:
+            raise RuntimeError("No recipient email address.")
+        host = os.getenv("SMTP_SERVER") or os.getenv("SMTP_HOST") or "smtp.gmail.com"
+        port = int(os.getenv("SMTP_PORT") or 587)
+        user = os.getenv("SMTP_USERNAME")
+        password = os.getenv("SMTP_PASSWORD")
+        from_email = os.getenv("SMTP_FROM_EMAIL") or user
+        msg = MIMEText(body, "plain")
+        msg["Subject"] = subject
+        msg["From"] = from_email
+        msg["To"] = to_email
+        with smtplib.SMTP(host, port, timeout=20) as server:
+            if os.getenv("SMTP_USE_TLS", "true").lower() != "false":
+                server.starttls()
+            server.login(user, password)
+            server.sendmail(from_email, [to_email], msg.as_string())
+
+    @staticmethod
     async def send_reminder(
         db: AsyncSession,
         application_id: int,
         owner_id: Optional[int] = None
     ) -> Dict:
-        """
-        Send reminder for an application (placeholder - actual email sending would go here)
-        
-        Args:
-            db: Database session
-            application_id: Application ID
-            owner_id: Optional owner ID, if None sends to all owners
-            
-        Returns:
-            Dict with success status and message
-        """
+        """Send reminder for an application via SMTP. Fails if SMTP is unset."""
         try:
-            # Fetch application
             application = await application_reference_service.get_application_by_id(db, application_id)
             
             if not application:
@@ -275,12 +292,22 @@ class ReminderService:
                     "success": False,
                     "message": f"Application {application_id} not found"
                 }
-            
-            # TODO: Implement actual reminder sending logic (email, notification, etc.)
-            # For now, just log and return success
-            
+
+            to_email = getattr(application, "owner", None) or getattr(application, "owner_email", None)
+            if owner_id:
+                users = await entity_reference_service.get_users_by_ids(db, [owner_id])
+                owner = users.get(owner_id)
+                if owner and getattr(owner, "email", None):
+                    to_email = owner.email
+            if not to_email:
+                return {"success": False, "message": "Application has no owner email"}
+
+            ReminderService._send_smtp(
+                to_email,
+                f"RiskTrix reminder: {application.name}",
+                f"This is a reminder for application {application.name} (ID: {application_id}).",
+            )
             logger.info(f"Reminder sent for application {application.name} (ID: {application_id})")
-            
             return {
                 "success": True,
                 "message": "Reminder sent successfully",
@@ -480,11 +507,19 @@ class ReminderService:
                     "remindedAt": datetime.now().isoformat()
                 }
             
-            # TODO: Implement actual reminder sending logic (email, notification, etc.)
-            # For now, just log and return success
-            
+            to_email = getattr(vendor, "contact_email", None) or getattr(vendor, "email", None)
+            if not to_email:
+                return {
+                    "success": False,
+                    "message": f"Vendor {vendor.name} has no contact email",
+                    "remindedAt": datetime.now().isoformat()
+                }
+            ReminderService._send_smtp(
+                to_email,
+                f"RiskTrix vendor reminder: {vendor.name}",
+                f"This is a compliance reminder for vendor {vendor.name} (ID: {vendor_id}).",
+            )
             logger.info(f"Reminder sent for vendor {vendor.name} (ID: {vendor_id})")
-            
             return {
                 "success": True,
                 "message": f"Vendor reminder sent successfully to {vendor.name}",
@@ -525,11 +560,19 @@ class ReminderService:
                     "remindedAt": datetime.now().isoformat()
                 }
             
-            # TODO: Implement actual reminder sending logic (email, notification, etc.)
-            # For now, just log and return success
-            
+            to_email = getattr(exception, "owner_email", None) or getattr(exception, "requested_by_email", None)
+            if not to_email:
+                return {
+                    "success": False,
+                    "message": f"Exception {exception.exception_name} has no recipient email",
+                    "remindedAt": datetime.now().isoformat()
+                }
+            ReminderService._send_smtp(
+                to_email,
+                f"RiskTrix exception reminder: {exception.exception_name}",
+                f"This is a reminder for exception {exception.exception_name} (ID: {exception_id}).",
+            )
             logger.info(f"Reminder sent for exception {exception.exception_name} (ID: {exception_id})")
-            
             return {
                 "success": True,
                 "message": f"Exception reminder sent successfully for {exception.exception_name}",

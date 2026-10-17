@@ -40,11 +40,11 @@ class K8sCollector:
                 logger.info("Executing LIVE Kubernetes API cluster & pod security scan...")
                 return self._scan_live_k8s()
             except Exception as e:
-                logger.warning(f"Live Kubernetes API scan note: {e}. Utilizing live-structured telemetry collector...")
-                return self._scan_telemetry_k8s()
+                logger.warning(f"Live Kubernetes API scan error: {e}. Returning empty (no synthetic clusters).")
+                return [], []
         else:
-            logger.info("Utilizing live-structured Kubernetes telemetry collector...")
-            return self._scan_telemetry_k8s()
+            logger.info("No kubeconfig or in-cluster token. Connect credentials to scan.")
+            return [], []
 
     def _scan_live_k8s(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         # Attempt loading in-cluster or kubeconfig
@@ -162,6 +162,7 @@ class K8sCollector:
         return clusters, audits
 
     def _scan_telemetry_k8s(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        return [], []
         clusters = [
             {
                 "id": "cls-eks-prod-us",

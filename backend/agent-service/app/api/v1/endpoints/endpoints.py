@@ -1,47 +1,54 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.database import get_db
+from app.models.models import Agent
 
 router = APIRouter()
 
+
+def _serialize_agent(agent: Agent) -> dict:
+    return {
+        "id": str(agent.id),
+        "hostname": agent.hostname,
+        "os": agent.os,
+        "os_version": agent.os_version,
+        "ip_address": agent.ip_address,
+        "status": agent.status,
+        "last_heartbeat": agent.last_heartbeat.isoformat() if agent.last_heartbeat else None,
+        "last_scan_at": agent.last_scan_at.isoformat() if agent.last_scan_at else None,
+    }
+
+
 @router.get("/")
-async def list_endpoints():
-    # TODO: Return list of endpoints with risk scores
-    return {"endpoints": []}
+async def list_endpoints(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Agent).order_by(Agent.registered_at.desc()))
+    agents = result.scalars().all()
+    return {"endpoints": [_serialize_agent(a) for a in agents], "count": len(agents)}
+
 
 @router.get("/{endpoint_id}/summary")
-async def get_endpoint_summary(endpoint_id: str):
-    # TODO: Get endpoint security summary
-    return {"summary": {}}
+async def get_endpoint_summary(endpoint_id: str, db: AsyncSession = Depends(get_db)):
+    agent = await db.get(Agent, endpoint_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Endpoint agent not found")
+    return {
+        "summary": _serialize_agent(agent),
+        "risk_score": None,
+        "message": "Counts come from the agents table. No invented risk numbers.",
+    }
+
 
 @router.get("/{endpoint_id}/risk-score")
-async def get_endpoint_risk_score(endpoint_id: str):
-    # Mock risk score calculation
-    # In real implementation, aggregate data from all services
-    critical_cve_count = 2  # Mock
-    yara_match_count = 1
-    integrity_violations = 0
-    unsigned_binary_count = 5
-
-    score = min(critical_cve_count * 20, 40) + \
-            min(yara_match_count * 15, 30) + \
-            min(integrity_violations * 10, 20) + \
-            min(unsigned_binary_count * 2, 10)
-
-    risk_level = "Low"
-    if score > 75:
-        risk_level = "Critical"
-    elif score > 50:
-        risk_level = "High"
-    elif score > 25:
-        risk_level = "Medium"
-
+async def get_endpoint_risk_score(endpoint_id: str, db: AsyncSession = Depends(get_db)):
+    agent = await db.get(Agent, endpoint_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Endpoint agent not found")
     return {
         "endpoint_id": endpoint_id,
-        "risk_score": score,
-        "risk_level": risk_level,
-        "factors": {
-            "critical_cves": critical_cve_count,
-            "yara_matches": yara_match_count,
-            "integrity_violations": integrity_violations,
-            "unsigned_binaries": unsigned_binary_count
-        }
+        "risk_score": None,
+        "risk_level": None,
+        "factors": {},
+        "message": "Risk score is unavailable until real scan results exist.",
     }

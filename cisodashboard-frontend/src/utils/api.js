@@ -17,18 +17,18 @@ function forceLoopback(url) {
   );
 }
 
-const APPLICATION_SERVICE_URL = "http://127.0.0.1:8001";
-const AUDIT_SERVICE_URL = "http://127.0.0.1:8002";
-const MONOLITH_URL = "http://127.0.0.1:8000";
-const AGENT_SERVICE_URL = "http://127.0.0.1:8010";
-const BINARY_ANALYSIS_SERVICE_URL = "http://127.0.0.1:8011";
-const INTEGRITY_SERVICE_URL = "http://127.0.0.1:8012";
-const THREAT_INTELLIGENCE_SERVICE_URL = "http://127.0.0.1:8013";
-const CSPM_SERVICE_URL = "http://127.0.0.1:8014";
-const CIEM_SERVICE_URL = "http://127.0.0.1:8015";
-const K8S_CONTAINER_SERVICE_URL = "http://127.0.0.1:8016";
-const ALERT_NOTIFICATION_SERVICE_URL = "http://127.0.0.1:8017";
-const IP_SCANNER_SERVICE_URL = "http://127.0.0.1:8018";
+const APPLICATION_SERVICE_URL = forceLoopback(import.meta.env.VITE_APPLICATION_SERVICE_URL || "http://127.0.0.1:8001");
+const AUDIT_SERVICE_URL = forceLoopback(import.meta.env.VITE_AUDIT_SERVICE_URL || "http://127.0.0.1:8002");
+const MONOLITH_URL = forceLoopback(import.meta.env.VITE_MONOLITH_URL || "http://127.0.0.1:8000");
+const AGENT_SERVICE_URL = forceLoopback(import.meta.env.VITE_AGENT_SERVICE_URL || "http://127.0.0.1:8010");
+const BINARY_ANALYSIS_SERVICE_URL = forceLoopback(import.meta.env.VITE_BINARY_ANALYSIS_SERVICE_URL || "http://127.0.0.1:8011");
+const INTEGRITY_SERVICE_URL = forceLoopback(import.meta.env.VITE_INTEGRITY_SERVICE_URL || "http://127.0.0.1:8012");
+const THREAT_INTELLIGENCE_SERVICE_URL = forceLoopback(import.meta.env.VITE_THREAT_INTELLIGENCE_SERVICE_URL || "http://127.0.0.1:8013");
+const CSPM_SERVICE_URL = forceLoopback(import.meta.env.VITE_CSPM_SERVICE_URL || "http://127.0.0.1:8014");
+const CIEM_SERVICE_URL = forceLoopback(import.meta.env.VITE_CIEM_SERVICE_URL || "http://127.0.0.1:8015");
+const K8S_CONTAINER_SERVICE_URL = forceLoopback(import.meta.env.VITE_K8S_CONTAINER_SERVICE_URL || "http://127.0.0.1:8016");
+const ALERT_NOTIFICATION_SERVICE_URL = forceLoopback(import.meta.env.VITE_ALERT_NOTIFICATION_SERVICE_URL || "http://127.0.0.1:8017");
+const IP_SCANNER_SERVICE_URL = forceLoopback(import.meta.env.VITE_IP_SCANNER_SERVICE_URL || "http://127.0.0.1:8018");
 
 // Define which paths belong to which service
 const SERVICE_ROUTES = {

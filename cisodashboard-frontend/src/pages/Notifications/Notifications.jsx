@@ -151,23 +151,38 @@ const Notifications = () => {
   const toast = (message, severity = "success") => setSnack({ open: true, message, severity });
 
   const handleToggle = async (id, val) => {
-    try { await api.put("/api/v1/notifications/" + id, { enabled: val }); } catch {}
-    setChannels(p => p.map(c => c.id === id ? { ...c, enabled: val } : c));
-    toast("Channel " + (val ? "enabled" : "disabled"));
+    try {
+      await api.put("/api/v1/notifications/" + id, { enabled: val });
+      setChannels(p => p.map(c => c.id === id ? { ...c, enabled: val } : c));
+      toast("Channel " + (val ? "enabled" : "disabled"));
+    } catch (err) {
+      toast(err?.response?.data?.detail || "Could not update channel", "error");
+    }
   };
 
   const handleDelete = async (id) => {
-    try { await api.delete("/api/v1/notifications/" + id); } catch {}
-    setChannels(p => p.filter(c => c.id !== id));
-    toast("Channel removed", "info");
+    try {
+      await api.delete("/api/v1/notifications/" + id);
+      setChannels(p => p.filter(c => c.id !== id));
+      toast("Channel removed", "info");
+    } catch (err) {
+      toast(err?.response?.data?.detail || "Could not delete channel", "error");
+    }
   };
 
   const handleTest = async (ch) => {
     setTestingId(ch.id);
-    try { await api.post("/api/v1/webhooks/test", { channel_id: ch.id }); } catch {}
-    toast("Test payload sent to " + ch.name);
-    setLog(p => [{ id: "dl-" + Date.now(), channel: ch.name, event: "TEST — Manual Trigger", status: "DELIVERED", latency_ms: 99, timestamp: "Just now" }, ...p]);
-    setTimeout(() => setTestingId(null), 1500);
+    try {
+      const res = await api.post("/api/v1/webhooks/test", { channel_id: ch.id });
+      const ok = res.data?.status === "SUCCESS";
+      toast(ok ? "Test payload sent to " + ch.name : (res.data?.response_message || "Test failed"), ok ? "success" : "error");
+      setLog(p => [{ id: "dl-" + Date.now(), channel: ch.name, event: "TEST — Manual Trigger", status: ok ? "DELIVERED" : "FAILED", latency_ms: 0, timestamp: "Just now" }, ...p]);
+    } catch (err) {
+      toast(err?.response?.data?.detail || "Test failed", "error");
+      setLog(p => [{ id: "dl-" + Date.now(), channel: ch.name, event: "TEST — Manual Trigger", status: "FAILED", latency_ms: 0, timestamp: "Just now" }, ...p]);
+    } finally {
+      setTestingId(null);
+    }
   };
 
   const handleModalTestConnection = async () => {
@@ -200,12 +215,16 @@ const Notifications = () => {
 
   const handleAdd = async () => {
     const c = { ...newCh, id: "wh-" + Date.now(), status: "ACTIVE", success_count: 0, failure_count: 0, last_triggered: "Never" };
-    try { await api.post("/api/v1/notifications", c); } catch {}
-    setChannels(p => [...p, c]);
-    setAddOpen(false);
-    setNewCh({...EMPTY});
-    setModalTestResult(null);
-    toast("Channel registered: " + c.name);
+    try {
+      const res = await api.post("/api/v1/notifications", c);
+      setChannels(p => [...p, res.data || c]);
+      setAddOpen(false);
+      setNewCh({...EMPTY});
+      setModalTestResult(null);
+      toast("Channel registered: " + c.name);
+    } catch (err) {
+      toast(err?.response?.data?.detail || "Could not register channel", "error");
+    }
   };
 
   const active = channels.filter(c => c.enabled && c.status === "ACTIVE").length;

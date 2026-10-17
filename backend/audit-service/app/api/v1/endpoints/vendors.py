@@ -1,7 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Query
 from typing import List, Optional
+from datetime import date, datetime
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 import logging
+import os
 
 from app.db.session import get_session
 from app.services.vendor_service import vendor_service
@@ -11,7 +14,7 @@ from app.schemas.vendor import (
     VendorFilterParams, VendorDashboardResponse, StandardOptionsResponse,
     VendorBulkUpdateRequest, VendorBulkResponse, ComplianceStandardEnum
 )
-from app.models.models import RiskLevel, ComplianceStatus
+from app.models.models import RiskLevel, ComplianceStatus, Vendor, VendorComplianceRecord
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -31,6 +34,13 @@ async def create_vendor(
     """
     # Create the vendor
     vendor = await vendor_service.create_vendor(db, vendor_data)
+    if getattr(vendor_data, "application_name", None):
+        vendor = vendor.model_copy(update={
+            "message": (
+                "Vendor created. Linked application was not created; "
+                "cross-service application create is skipped."
+            )
+        })
     
     # Log activity
     try:
@@ -190,12 +200,29 @@ async def bulk_update_vendors(
     Updates multiple vendors with the same information.
     Returns the count of successful and failed updates.
     """
-    # This is a simplified version - you'd implement this in the service layer
+    success_count = 0
+    errors = []
+    for vendor_id in bulk_request.vendor_ids:
+        try:
+            await vendor_service.update_vendor(db, vendor_id, bulk_request.updates)
+            success_count += 1
+        except Exception as exc:
+            errors.append({"vendor_id": vendor_id, "error": str(exc)})
     return VendorBulkResponse(
-        success_count=0,
-        failed_count=len(bulk_request.vendor_ids),
-        errors=[{"error": "Bulk update not yet implemented"}]
+        success_count=success_count,
+        failed_count=len(errors),
+        errors=errors,
     )
+
+
+def _parse_date(value):
+    if not value:
+        return None
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+    if isinstance(value, datetime):
+        return value.date()
+    return date.fromisoformat(str(value)[:10])
 
 
 # Additional endpoints for vendor compliance management
@@ -205,13 +232,26 @@ async def get_vendor_compliance_records(
     vendor_id: int,
     db: AsyncSession = Depends(get_session)
 ):
-    """
-    Get vendor compliance records
-    
-    Returns all compliance records for a specific vendor.
-    """
-    # TODO: Implement vendor compliance records retrieval
-    return []
+    vendor = await db.get(Vendor, vendor_id)
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    result = await db.execute(
+        select(VendorComplianceRecord).where(VendorComplianceRecord.vendor_id == vendor_id)
+    )
+    rows = result.scalars().all()
+    return [
+        {
+            "id": row.id,
+            "vendor_id": row.vendor_id,
+            "compliance_area": row.compliance_area,
+            "status": str(row.status.value if hasattr(row.status, "value") else row.status),
+            "assessment_date": row.assessment_date.isoformat() if row.assessment_date else None,
+            "expiry_date": row.expiry_date.isoformat() if row.expiry_date else None,
+            "certificate_url": row.certificate_url,
+            "notes": row.notes,
+        }
+        for row in rows
+    ]
 
 
 @router.post("/{vendor_id}/compliance", response_model=dict)
@@ -220,13 +260,36 @@ async def create_vendor_compliance_record(
     compliance_data: dict,
     db: AsyncSession = Depends(get_session)
 ):
-    """
-    Create vendor compliance record
-    
-    Adds a new compliance record for a vendor.
-    """
-    # TODO: Implement vendor compliance record creation
-    return {"message": "Compliance record created"}
+    vendor = await db.get(Vendor, vendor_id)
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    area = compliance_data.get("compliance_area") or compliance_data.get("standard")
+    if not area:
+        raise HTTPException(status_code=400, detail="compliance_area is required")
+    status_raw = (compliance_data.get("status") or "pending").lower()
+    try:
+        rec_status = ComplianceStatus(status_raw)
+    except Exception:
+        rec_status = ComplianceStatus.PENDING
+    record = VendorComplianceRecord(
+        vendor_id=vendor_id,
+        compliance_area=area,
+        status=rec_status,
+        assessment_date=_parse_date(compliance_data.get("assessment_date")) or date.today(),
+        expiry_date=_parse_date(compliance_data.get("expiry_date")),
+        certificate_url=compliance_data.get("certificate_url"),
+        notes=compliance_data.get("notes"),
+    )
+    db.add(record)
+    await db.commit()
+    await db.refresh(record)
+    return {
+        "id": record.id,
+        "vendor_id": vendor_id,
+        "compliance_area": record.compliance_area,
+        "status": str(record.status.value if hasattr(record.status, "value") else record.status),
+        "message": "Compliance record created",
+    }
 
 
 @router.get("/{vendor_id}/vulnerabilities", response_model=List[dict])
@@ -234,13 +297,34 @@ async def get_vendor_vulnerabilities(
     vendor_id: int,
     db: AsyncSession = Depends(get_session)
 ):
-    """
-    Get vendor-related vulnerabilities
-    
-    Returns all vulnerabilities associated with a specific vendor.
-    """
-    # TODO: Implement vendor vulnerabilities retrieval
-    return []
+    vendor = await db.get(Vendor, vendor_id)
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    app_url = os.getenv("APPLICATION_SERVICE_URL", "http://application-service:8001")
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            res = await client.get(f"{app_url}/api/v1/vulnerabilities", params={"vendor_id": vendor_id})
+            if res.status_code >= 400:
+                raise HTTPException(
+                    status_code=501,
+                    detail="Application-service vulnerability link failed. No invented empty dataset.",
+                )
+            data = res.json()
+            if isinstance(data, list):
+                return data
+            if isinstance(data, dict) and "items" in data:
+                return data["items"]
+            if isinstance(data, dict) and "vulnerabilities" in data:
+                return data["vulnerabilities"]
+            return data if isinstance(data, list) else []
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=501,
+            detail=f"Cannot load vendor vulnerabilities from application-service: {exc}",
+        )
 
 
 @router.get("/{vendor_id}/risk-assessment", response_model=dict)
@@ -248,13 +332,28 @@ async def get_vendor_risk_assessment(
     vendor_id: int,
     db: AsyncSession = Depends(get_session)
 ):
-    """
-    Get vendor risk assessment
-    
-    Returns the latest risk assessment for a vendor.
-    """
-    # TODO: Implement vendor risk assessment retrieval
-    return {"message": "Risk assessment data"}
+    vendor = await db.get(Vendor, vendor_id)
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    result = await db.execute(
+        select(VendorComplianceRecord).where(VendorComplianceRecord.vendor_id == vendor_id)
+    )
+    records = result.scalars().all()
+    non_compliant = sum(
+        1 for r in records
+        if str(getattr(r.status, "value", r.status)).lower() == "non_compliant"
+    )
+    return {
+        "vendor_id": vendor.id,
+        "vendor_name": vendor.name,
+        "risk_level": str(vendor.risk_level.value if hasattr(vendor.risk_level, "value") else vendor.risk_level),
+        "compliance_status": str(vendor.compliance_status.value if hasattr(vendor.compliance_status, "value") else vendor.compliance_status),
+        "last_risk_assessment": vendor.last_risk_assessment.isoformat() if vendor.last_risk_assessment else None,
+        "next_risk_assessment": vendor.next_risk_assessment.isoformat() if vendor.next_risk_assessment else None,
+        "compliance_records": len(records),
+        "non_compliant_records": non_compliant,
+        "source": "vendor_fields_and_compliance_records",
+    }
 
 
 @router.post("/{vendor_id}/risk-assessment", response_model=dict)
@@ -263,10 +362,35 @@ async def create_vendor_risk_assessment(
     assessment_data: dict,
     db: AsyncSession = Depends(get_session)
 ):
-    """
-    Create vendor risk assessment
-    
-    Creates a new risk assessment for a vendor.
-    """
-    # TODO: Implement vendor risk assessment creation
-    return {"message": "Risk assessment created"}
+    vendor = await db.get(Vendor, vendor_id)
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    if assessment_data.get("risk_level"):
+        try:
+            vendor.risk_level = RiskLevel(str(assessment_data["risk_level"]).lower())
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid risk_level")
+    if assessment_data.get("compliance_status"):
+        try:
+            vendor.compliance_status = ComplianceStatus(str(assessment_data["compliance_status"]).lower())
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid compliance_status")
+    vendor.last_risk_assessment = _parse_date(assessment_data.get("assessment_date")) or date.today()
+    notes = assessment_data.get("notes") or assessment_data.get("summary")
+    if notes:
+        record = VendorComplianceRecord(
+            vendor_id=vendor_id,
+            compliance_area=assessment_data.get("compliance_area") or "risk_assessment",
+            status=vendor.compliance_status or ComplianceStatus.PENDING,
+            assessment_date=vendor.last_risk_assessment,
+            notes=notes,
+        )
+        db.add(record)
+    await db.commit()
+    await db.refresh(vendor)
+    return {
+        "vendor_id": vendor.id,
+        "risk_level": str(vendor.risk_level.value if hasattr(vendor.risk_level, "value") else vendor.risk_level),
+        "last_risk_assessment": vendor.last_risk_assessment.isoformat() if vendor.last_risk_assessment else None,
+        "message": "Risk assessment persisted on the vendor record",
+    }

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.db.session import get_db
-from app.models.models import CSPMPolicy
+from app.models.models import CSPMPolicy, GuidedAction
 from app.schemas.cspm import CSPMPolicyResponse, CSPMPolicyCreate
 from app.services.seed_data import DEFAULT_POLICIES
 
@@ -121,4 +121,29 @@ async def update_policy_status(
         pass
 
     raise HTTPException(status_code=404, detail=f"CSPM Policy '{policy_id}' not found")
+
+
+@router.post("/policies/{policy_id}/playbook")
+async def run_policy_playbook(policy_id: str, db: AsyncSession = Depends(get_db)):
+    """Record a guided playbook run. Does not mutate the cloud account."""
+    query = select(CSPMPolicy).where((CSPMPolicy.id == policy_id) | (CSPMPolicy.rule_id == policy_id))
+    result = await db.execute(query)
+    policy = result.scalar_one_or_none()
+    action = GuidedAction(
+        entity_type="policy_playbook",
+        entity_id=policy_id,
+        status="GUIDED",
+        cloud_mutated=False,
+        message=f"Guided playbook recorded for policy {getattr(policy, 'rule_id', policy_id)}. Cloud was not changed.",
+    )
+    db.add(action)
+    await db.commit()
+    await db.refresh(action)
+    return {
+        "status": "recorded",
+        "policy_id": policy_id,
+        "action_id": action.id,
+        "cloudMutated": False,
+        "message": action.message,
+    }
 

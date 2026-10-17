@@ -296,102 +296,89 @@ async def test_cloud_connection(
         except HTTPException:
             raise
         except Exception as e:
-            return {
-                "status": "success",
-                "message": f"AWS Credentials verified for Account ID {account_id} in {region}.",
-                "account_id": account_id,
-                "provider": "AWS",
-                "permissions_summary": {
-                    "granted_count": 1,
-                    "missing_count": 0,
-                    "total_probed": 1,
-                    "granted": [{"action": "sts:GetCallerIdentity", "service": "STS", "purpose": "Basic Auth", "status": "GRANTED"}],
-                    "missing": [],
-                },
-                "recommended_iam_policy": {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Sid": "RiskTrixCNAPPReadOnlyAccess",
-                            "Effect": "Allow",
-                            "Action": ["sts:GetCallerIdentity", "s3:ListAllMyBuckets", "ec2:DescribeInstances", "iam:ListUsers"],
-                            "Resource": "*"
-                        }
-                    ]
-                }
-            }
+            raise HTTPException(status_code=400, detail=f"AWS connection probe failed: {e}")
 
     elif provider == "AZURE":
         if not tenant_id or not client_id or not client_secret:
             raise HTTPException(status_code=400, detail="Azure Tenant ID, Client ID, and Client Secret are required.")
-
-        granted = [
-            {"action": "Microsoft.Resources/subscriptions/read", "service": "Resource", "purpose": "Subscription Inventory", "status": "GRANTED"},
-            {"action": "Microsoft.Storage/storageAccounts/read", "service": "Storage", "purpose": "Storage Account Posture", "status": "GRANTED"},
-            {"action": "Microsoft.Compute/virtualMachines/read", "service": "Compute", "purpose": "VM Instance Inventory", "status": "GRANTED"}
-        ]
-        missing = [
-            {"action": "Microsoft.Network/networkSecurityGroups/read", "service": "Network", "purpose": "NSG Firewall Rules Audit", "status": "MISSING", "impact": "NSG posture rules will be skipped."}
-        ]
-
-        return {
-            "status": "success",
-            "message": f"Azure Active Directory Credentials Verified for Tenant {tenant_id[:8]}... 3 permissions granted.",
-            "account_id": account_id,
-            "provider": "AZURE",
-            "permissions_summary": {
-                "granted_count": len(granted),
-                "missing_count": len(missing),
-                "total_probed": len(granted) + len(missing),
-                "granted": granted,
-                "missing": missing,
-            },
-            "recommended_iam_policy": {
-                "RoleName": "RiskTrix Security Reader",
-                "Description": "Assign 'Reader' or 'Security Reader' built-in role at Subscription level."
+        try:
+            from azure.identity import ClientSecretCredential
+            from azure.mgmt.resource import SubscriptionClient
+            cred = ClientSecretCredential(tenant_id=tenant_id, client_id=client_id, client_secret=client_secret)
+            subs = list(SubscriptionClient(cred).subscriptions.list())
+            granted = [{
+                "action": "Microsoft.Resources/subscriptions/read",
+                "service": "Resource",
+                "purpose": "Subscription Inventory",
+                "status": "GRANTED",
+            }]
+            return {
+                "status": "success",
+                "message": f"Azure credentials authenticated. {len(subs)} subscription(s) visible.",
+                "account_id": account_id or (str(subs[0].subscription_id) if subs else tenant_id),
+                "provider": "AZURE",
+                "permissions_summary": {
+                    "granted_count": 1,
+                    "missing_count": 0,
+                    "total_probed": 1,
+                    "granted": granted,
+                    "missing": [],
+                },
+                "recommended_iam_policy": {
+                    "RoleName": "RiskTrix Security Reader",
+                    "Description": "Assign Reader or Security Reader at subscription scope.",
+                },
             }
-        }
+        except HTTPException:
+            raise
+        except ImportError:
+            raise HTTPException(status_code=400, detail="Azure SDK is not installed. Cannot probe credentials.")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Azure connection probe failed: {e}")
 
     elif provider == "GCP":
         if not sa_json:
             raise HTTPException(status_code=400, detail="GCP Service Account Key JSON is required.")
-
-        granted = [
-            {"action": "resourcemanager.projects.get", "service": "ResourceManager", "purpose": "Project Inventory", "status": "GRANTED"},
-            {"action": "storage.buckets.list", "service": "CloudStorage", "purpose": "GCS Bucket Posture", "status": "GRANTED"}
-        ]
-        missing = [
-            {"action": "sqladmin.instances.list", "service": "CloudSQL", "purpose": "Cloud SQL Encryption Audit", "status": "MISSING", "impact": "Cloud SQL posture rules skipped."}
-        ]
-
-        client_email = "sa@gcp.iam"
         try:
-            import json
-            if sa_json.startswith("{"):
-                parsed = json.loads(sa_json)
-                client_email = parsed.get("client_email", client_email)
-        except Exception:
-            pass
-
-        return {
-            "status": "success",
-            "message": f"GCP Service Account Verified for {client_email}. Utilizing 2 active permissions.",
-            "account_id": account_id,
-            "provider": "GCP",
-            "permissions_summary": {
-                "granted_count": len(granted),
-                "missing_count": len(missing),
-                "total_probed": len(granted) + len(missing),
-                "granted": granted,
-                "missing": missing,
-            },
-            "recommended_iam_policy": {
-                "RoleName": "roles/viewer",
-                "Description": "Assign 'Viewer' or 'Security Reviewer' role to Service Account in GCP IAM."
+            import json as _json
+            from google.oauth2 import service_account
+            from google.cloud import storage
+            if not sa_json.startswith("{"):
+                raise HTTPException(status_code=400, detail="GCP service_account_json must be a JSON object string.")
+            parsed = _json.loads(sa_json)
+            creds = service_account.Credentials.from_service_account_info(parsed)
+            client = storage.Client(credentials=creds, project=parsed.get("project_id") or account_id)
+            buckets = list(client.list_buckets())
+            return {
+                "status": "success",
+                "message": f"GCP service account authenticated ({parsed.get('client_email')}). {len(buckets)} bucket(s) listed.",
+                "account_id": account_id or parsed.get("project_id"),
+                "provider": "GCP",
+                "permissions_summary": {
+                    "granted_count": 1,
+                    "missing_count": 0,
+                    "total_probed": 1,
+                    "granted": [{
+                        "action": "storage.buckets.list",
+                        "service": "CloudStorage",
+                        "purpose": "GCS Bucket Posture",
+                        "status": "GRANTED",
+                    }],
+                    "missing": [],
+                },
+                "recommended_iam_policy": {
+                    "RoleName": "roles/viewer",
+                    "Description": "Assign Viewer or Security Reviewer to the service account.",
+                },
             }
-        }
+        except HTTPException:
+            raise
+        except ImportError:
+            raise HTTPException(status_code=400, detail="GCP SDK is not installed. Cannot probe credentials.")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"GCP connection probe failed: {e}")
 
-    return {"status": "success", "message": "Connection verified."}
+    raise HTTPException(status_code=400, detail=f"Unsupported provider '{provider}'.")
 
 
 async def _lookup_account(account_id: str, db: AsyncSession) -> Optional[CloudAccount]:

@@ -33,6 +33,9 @@ class CVEItemResponse(BaseModel):
 class CVELookupResponse(BaseModel):
     total_found: int
     cves: List[CVEItemResponse]
+    source: str = "database"
+    nvd_queried: bool = False
+    message: Optional[str] = None
 
 
 class FeedSyncStatusItem(BaseModel):

@@ -31,15 +31,14 @@ class GCP_IAMCollector:
                 logger.info(f"Executing LIVE GCP IAM scan for project {self.project_id}...")
                 return self._collect_live_gcp()
             except Exception as e:
-                logger.warning(f"Live GCP IAM scan error: {e}. Utilizing live-structured telemetry stream...")
-                return self._collect_telemetry_gcp()
+                logger.warning(f"Live GCP IAM scan error: {e}. Returning empty (no synthetic identities).")
+                return [], [], []
         else:
-            logger.info(f"Utilizing live-structured GCP IAM telemetry collector for project {self.project_id}...")
-            return self._collect_telemetry_gcp()
+            logger.info(f"No GCP credentials for project {self.project_id}. Connect CSPM account credentials to sync.")
+            return [], [], []
 
     def _collect_live_gcp(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
-        # Live GCP API call fallback
-        return self._collect_telemetry_gcp()
+        return [], [], []
 
     def _collect_telemetry_gcp(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
         identities = [

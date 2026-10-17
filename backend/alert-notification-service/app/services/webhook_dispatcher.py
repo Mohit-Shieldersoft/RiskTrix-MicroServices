@@ -94,18 +94,17 @@ async def dispatch_webhook_notification(
                         "response_message": f"HTTP {response.status} - Delivery confirmed via urllib.",
                         "timestamp": timestamp,
                     }
-        else:
-            return {
-                "status": "SUCCESS",
-                "status_code": 200,
-                "response_message": f"Simulated delivery to non-HTTP endpoint: {target_url}",
-                "timestamp": timestamp,
-            }
-    except Exception as e:
-        logger.info(f"Webhook send simulated fallback: {e}")
         return {
-            "status": "SUCCESS",
-            "status_code": 200,
-            "response_message": f"Alert webhook notification dispatched via {channel_type} engine (simulated sandbox).",
+            "status": "FAILED",
+            "status_code": 400,
+            "response_message": f"Target is not an HTTP URL: {target_url}",
+            "timestamp": timestamp,
+        }
+    except Exception as e:
+        logger.warning("Webhook delivery failed: %s", e)
+        return {
+            "status": "FAILED",
+            "status_code": 502,
+            "response_message": str(e),
             "timestamp": timestamp,
         }

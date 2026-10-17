@@ -197,7 +197,7 @@ export const RBACProvider = ({ children }) => {
 
   useEffect(() => {
     // Load user from localStorage
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem('rt_user_profile') || localStorage.getItem('user');
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);

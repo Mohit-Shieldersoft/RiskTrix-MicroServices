@@ -41,11 +41,11 @@ class Azure_IAMCollector:
                 logger.info(f"Executing LIVE Azure Entra ID & Authorization scan for subscription {self.subscription_id}...")
                 return self._collect_live_azure()
             except Exception as e:
-                logger.warning(f"Live Azure IAM scan error: {e}. Utilizing live-structured telemetry stream...")
-                return self._collect_telemetry_azure()
+                logger.warning(f"Live Azure IAM scan error: {e}. Returning empty (no synthetic identities).")
+                return [], [], []
         else:
-            logger.info(f"Utilizing live-structured Azure Entra ID telemetry collector for subscription {self.subscription_id}...")
-            return self._collect_telemetry_azure()
+            logger.info(f"No Azure credentials for subscription {self.subscription_id}. Connect CSPM account credentials to sync.")
+            return [], [], []
 
     def _collect_live_azure(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
         credential = DefaultAzureCredential()

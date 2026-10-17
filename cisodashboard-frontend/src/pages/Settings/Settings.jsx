@@ -359,47 +359,14 @@ const Settings = () => {
   });
 
   // Mock data for demonstration
-  const [profiles, setProfiles] = useState([
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john@example.com",
-      type: "client",
-      company: "ABC Corp",
-      createdAt: "2025-03-15",
-      privilegeLevel: "admin",
-      clearanceLevel: "high",
-      status: "active",
-    },
-    {
-      id: 2,
-      name: "Sarah Connor",
-      email: "sarah@terminator.com",
-      type: "security",
-      company: "Cyberdyne Systems",
-      createdAt: "2025-04-01",
-      privilegeLevel: "standard",
-      clearanceLevel: "top",
-      status: "active",
-    },
-    {
-      id: 3,
-      name: "Mike Ross",
-      email: "mike@pearson.com",
-      type: "auditor",
-      company: "Pearson Hardman",
-      createdAt: "2025-04-12",
-      privilegeLevel: "standard",
-      clearanceLevel: "medium",
-      status: "inactive",
-    },
-  ]);
+  const [profiles, setProfiles] = useState([]);
+  const [profileSearch, setProfileSearch] = useState("");
 
   // Load profiles from backend
   const loadProfiles = async () => {
     // use module-level API_BASE_URL/API_PREFIX
     try {
-      const res = await axios.get(`${API_BASE_URL}${API_PREFIX}/users/`);
+      const res = await api.get(`/api/v1/users/`);
       const items = res.data?.items || [];
       const normalized = items.map((u, idx) => {
         // Accept multiple possible backend keys and normalize to lowercase where appropriate
@@ -588,12 +555,9 @@ const Settings = () => {
         // update existing user
         // don't send empty password
         if (!payload.password) delete payload.password;
-        res = await axios.put(
-          `${API_BASE_URL}${API_PREFIX}/users/${editingUserId}`,
-          payload,
-        );
+        res = await api.put(`/api/v1/users/${editingUserId}`, payload);
       } else {
-        res = await axios.post(`${API_BASE_URL}${API_PREFIX}/users/`, payload);
+        res = await api.post(`/api/v1/users/`, payload);
       }
       const created = res.data;
 
@@ -698,9 +662,7 @@ const Settings = () => {
     setConfirmOpen(false);
     if (!userId) return;
     try {
-      const res = await axios.delete(
-        `${API_BASE_URL}${API_PREFIX}/users/${userId}`,
-      );
+      const res = await api.delete(`/api/v1/users/${userId}`);
       if (res.status === 200 || res.status === 204) {
         await loadProfiles();
         setToast({
@@ -1186,6 +1148,8 @@ const Settings = () => {
                 <TextField
                   fullWidth
                   placeholder="Search profiles..."
+                  value={profileSearch}
+                  onChange={(e) => setProfileSearch(e.target.value)}
                   sx={{ mb: 2 }}
                   InputProps={{
                     startAdornment: (
@@ -1227,7 +1191,15 @@ const Settings = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {profiles.map((profile) => (
+                      {profiles
+                        .filter((profile) => {
+                          const q = profileSearch.trim().toLowerCase();
+                          if (!q) return true;
+                          return [profile.name, profile.email, profile.username, profile.role, profile.company]
+                            .filter(Boolean)
+                            .some((v) => String(v).toLowerCase().includes(q));
+                        })
+                        .map((profile) => (
                         <TableRow key={profile.id} hover>
                           <TableCell>
                             <Box

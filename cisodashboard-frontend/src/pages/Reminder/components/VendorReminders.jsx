@@ -11,6 +11,7 @@ import { alpha } from '@mui/material/styles';
 import dashboardTheme from '../../../theme/dashboardTheme';
 import Toast from '../../../components/common/Toast';
 import { useToast } from '../../../components/common/useToast';
+import { sendVendorNotification } from '../../../utils/tprmApi';
 
 const VendorReminders = ({ data, loading }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,15 +33,17 @@ const VendorReminders = ({ data, loading }) => {
     setSearchTerm(e.target.value);
   };
   
-  const handleSendReminder = (id) => {
-    // Set sending state
+  const handleSendReminder = async (id) => {
+    const vendorId = Number(String(id).replace(/\D/g, "")) || id;
     setSendingMap(prev => ({ ...prev, [id]: true }));
-    
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await sendVendorNotification(vendorId, "RiskTrix vendor reminder");
+      showToast("Reminder sent", "success");
+    } catch (err) {
+      showToast(err?.detail || err?.message || "Reminder could not be sent (SMTP required)", "error");
+    } finally {
       setSendingMap(prev => ({ ...prev, [id]: false }));
-      showToast('Reminder sent successfully', 'success');
-    }, 1500);
+    }
   };
   
   // Get color based on delay days

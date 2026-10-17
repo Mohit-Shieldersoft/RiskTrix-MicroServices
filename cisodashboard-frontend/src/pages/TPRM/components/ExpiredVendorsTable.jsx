@@ -103,7 +103,7 @@ const ExpiredVendorsTable = ({ data }) => {
             );
           })}
           
-          {data.length === 0 && (
+          {(data || []).length === 0 && (
             <TableRow>
               <TableCell colSpan={3} sx={{ textAlign: 'center', py: 3 }}>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>

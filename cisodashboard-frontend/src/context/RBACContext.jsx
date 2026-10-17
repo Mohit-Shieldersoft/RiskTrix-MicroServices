@@ -76,6 +76,15 @@ const ROLE_PERMISSIONS = {
     reports: ['create', 'read', 'update', 'delete'],
     audit: ['create', 'read', 'update', 'delete'],
     settings: ['read', 'update'],
+    cloud_accounts: ['create', 'read', 'update', 'delete', 'sync'],
+    cspm_findings: ['read', 'update', 'suppress', 'remediate'],
+    cspm_policies: ['create', 'read', 'update', 'delete'],
+    ciem: ['read', 'analyze', 'update'],
+    k8s_security: ['read', 'scan', 'update'],
+    container_security: ['read', 'scan', 'delete'],
+    runtime_security: ['read', 'configure', 'update'],
+    security_alerts: ['read', 'update', 'assign', 'resolve'],
+    security_score: ['read', 'recalculate'],
   },
   [UserRoles.CISO]: {
     users: ['read'],
@@ -87,6 +96,15 @@ const ROLE_PERMISSIONS = {
     reports: ['create', 'read'],
     audit: ['read'],
     settings: ['read'],
+    cloud_accounts: ['read', 'sync'],
+    cspm_findings: ['read', 'update', 'suppress'],
+    cspm_policies: ['read', 'update'],
+    ciem: ['read', 'analyze'],
+    k8s_security: ['read'],
+    container_security: ['read'],
+    runtime_security: ['read'],
+    security_alerts: ['read', 'update', 'assign'],
+    security_score: ['read', 'recalculate'],
   },
   [UserRoles.INFOSEC_MANAGER]: {
     applications: ['create', 'read', 'update'],
@@ -96,6 +114,15 @@ const ROLE_PERMISSIONS = {
     exceptions: ['create', 'read', 'update'],
     reports: ['create', 'read'],
     audit: ['read'],
+    cloud_accounts: ['read', 'sync'],
+    cspm_findings: ['read', 'update'],
+    cspm_policies: ['read'],
+    ciem: ['read', 'analyze'],
+    k8s_security: ['read', 'scan'],
+    container_security: ['read', 'scan'],
+    runtime_security: ['read'],
+    security_alerts: ['read', 'update', 'assign'],
+    security_score: ['read'],
   },
   [UserRoles.EXTERNAL_AUDITOR]: {
     applications: ['read'],
@@ -105,6 +132,10 @@ const ROLE_PERMISSIONS = {
     exceptions: ['read'],
     reports: ['read'],
     audit: ['read'],
+    cloud_accounts: ['read'],
+    cspm_findings: ['read'],
+    cspm_policies: ['read'],
+    security_score: ['read'],
   },
   [UserRoles.INTERNAL_AUDITOR]: {
     applications: ['read'],
@@ -114,6 +145,15 @@ const ROLE_PERMISSIONS = {
     exceptions: ['read'],
     reports: ['create', 'read'],
     audit: ['create', 'read'],
+    cloud_accounts: ['read'],
+    cspm_findings: ['read'],
+    cspm_policies: ['read'],
+    ciem: ['read'],
+    k8s_security: ['read'],
+    container_security: ['read'],
+    runtime_security: ['read'],
+    security_alerts: ['read'],
+    security_score: ['read'],
   },
   [UserRoles.SECURITY_ANALYST]: {
     applications: ['read', 'update'],
@@ -123,6 +163,15 @@ const ROLE_PERMISSIONS = {
     exceptions: ['create', 'read'],
     reports: ['read'],
     audit: ['read'],
+    cloud_accounts: ['read'],
+    cspm_findings: ['read', 'update'],
+    cspm_policies: ['read'],
+    ciem: ['read'],
+    k8s_security: ['read', 'scan'],
+    container_security: ['read', 'scan'],
+    runtime_security: ['read'],
+    security_alerts: ['read', 'update'],
+    security_score: ['read'],
   },
   [UserRoles.VIEWER]: {
     applications: ['read'],
@@ -132,6 +181,9 @@ const ROLE_PERMISSIONS = {
     exceptions: ['read'],
     reports: ['read'],
     audit: ['read'],
+    cloud_accounts: ['read'],
+    cspm_findings: ['read'],
+    security_score: ['read'],
   }
 };
 
@@ -145,7 +197,7 @@ export const RBACProvider = ({ children }) => {
 
   useEffect(() => {
     // Load user from localStorage
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem('rt_user_profile') || localStorage.getItem('user');
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
@@ -165,7 +217,7 @@ export const RBACProvider = ({ children }) => {
     
     // Check if user has any of the required roles
     for (const required of requiredRoles) {
-      if (ROLE_HIERARCHY[required]?.includes(userRole)) {
+      if (ROLE_HIERARCHY[userRole]?.includes(required)) {
         return true;
       }
     }

@@ -1,6 +1,8 @@
 """API endpoints for vulnerability management (Closure Tracking)."""
 from typing import Optional
+import os
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -18,7 +20,10 @@ from app.schemas.vulnerability import (
     RiskLevel,
     POCUploadResponse
 )
-import pandas as pd
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
 import io
 import logging
 from datetime import datetime, timezone
@@ -329,8 +334,8 @@ async def upload_poc_file(
     )
 
 
-@router.delete("/{vulnerability_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_vulnerability(
+@router.get("/{vulnerability_id}/poc")
+async def download_poc_file(
     *,
     db: AsyncSession = Depends(get_session),
     vulnerability_id: int
@@ -339,13 +344,25 @@ async def delete_vulnerability(
         db=db,
         vulnerability_id=vulnerability_id
     )
+    path = getattr(vulnerability, "poc_file_path", None) if vulnerability else None
+    if not path or not os.path.isfile(path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="POC file not found")
+    return FileResponse(path, filename=os.path.basename(path), media_type="application/octet-stream")
 
-    if not vulnerability:
+
+@router.delete("/{vulnerability_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_vulnerability(
+    *,
+    db: AsyncSession = Depends(get_session),
+    vulnerability_id: int
+):
+    from app.crud.crud_vulnerability import vulnerability as vulnerability_crud
+    deleted = await vulnerability_crud.remove(db=db, id=vulnerability_id)
+    if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Vulnerability with ID {vulnerability_id} not found"
         )
-
     return None
 
 

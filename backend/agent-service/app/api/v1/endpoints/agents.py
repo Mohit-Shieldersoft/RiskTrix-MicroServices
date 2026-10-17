@@ -9,7 +9,11 @@ from app.db.database import get_db
 import uuid
 from datetime import datetime
 from pydantic import BaseModel
-import httpx
+try:
+    import httpx
+    HAS_HTTPX = True
+except ImportError:
+    HAS_HTTPX = False
 import asyncio
 
 router = APIRouter()
@@ -62,9 +66,9 @@ async def heartbeat(agent_id: str, heartbeat: Heartbeat, db: AsyncSession = Depe
 @router.get("/policies", response_model=dict)
 async def get_agent_policies():
     """Get agent policies"""
-    # TODO: Implement policy retrieval from database
-    # For now, return basic policies
     return {
+        "source": "default",
+        "message": "No agent policy rows in the database; returning the static default catalog.",
         "policies": {
             "heartbeat_interval": 30,
             "scan_enabled": True,
@@ -126,19 +130,14 @@ async def request_scan(agent_id: str, db: AsyncSession = Depends(get_db)):
         await db.commit()
         await db.refresh(scan_request)
 
-        # Create mock scan results for demo purposes
-        await create_mock_scan_results(agent_id)
-
-        # Mark scan request as completed
-        scan_request.status = "completed"
-        scan_request.completed_at = datetime.utcnow()
         await db.commit()
 
         return {
-            "status": "completed",
+            "status": "pending",
             "scan_request_id": str(scan_request.id),
             "agent_id": agent_id,
-            "requested_at": scan_request.requested_at.isoformat()
+            "requested_at": scan_request.requested_at.isoformat(),
+            "message": "Scan queued. Status stays pending until the agent completes it.",
         }
     except HTTPException:
         raise

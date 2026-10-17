@@ -1,7 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+import os
+from fastapi import APIRouter, Depends, HTTPException, status, Query, File, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from typing import List, Optional
 from datetime import date, datetime
+from app.models.models import Exception as ExceptionModel
 
 from app.db.session import get_session
 from app.schemas.exception import (
@@ -16,6 +20,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+POC_DIR = os.getenv("EXCEPTION_POC_DIR", "./uploads/exception-poc")
 
 
 @router.post("/", response_model=ExceptionResponse, status_code=status.HTTP_201_CREATED)
@@ -141,6 +146,61 @@ async def get_exceptions(
     return await exception_service.get_exceptions(db, filters, current_user_id)
 
 
+@router.get("/expiring/soon", response_model=List[ExceptionResponse])
+async def get_expiring_exceptions(
+    days: int = Query(30, ge=1, le=365, description="Number of days to look ahead"),
+    organization_id: Optional[int] = Query(None, description="Filter by organization"),
+    db: AsyncSession = Depends(get_session),
+    current_user_id: Optional[int] = None
+):
+    return await exception_service.get_expiring_exceptions(db, days, organization_id)
+
+
+@router.get("/stats/overview", response_model=ExceptionStats)
+async def get_exception_statistics(
+    organization_id: Optional[int] = Query(None, description="Filter by organization"),
+    db: AsyncSession = Depends(get_session),
+    current_user_id: Optional[int] = None
+):
+    return await exception_service.get_exception_stats(db, organization_id)
+
+
+@router.get("/meta/options", response_model=ExceptionCategoriesResponse)
+async def get_exception_options():
+    return ExceptionCategoriesResponse()
+
+
+@router.post("/{exception_id}/poc-upload", response_model=ExceptionResponse)
+async def upload_exception_poc(
+    exception_id: int,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(select(ExceptionModel).where(ExceptionModel.id == exception_id))
+    row = result.scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Exception not found")
+    os.makedirs(POC_DIR, exist_ok=True)
+    filename = f"exception_{exception_id}_{os.path.basename(file.filename or 'poc.bin')}"
+    path = os.path.join(POC_DIR, filename)
+    with open(path, "wb") as buffer:
+        buffer.write(await file.read())
+    row.poc_document = path
+    await db.commit()
+    await db.refresh(row)
+    return await exception_service._exception_to_response(row)
+
+
+@router.get("/{exception_id}/poc")
+async def download_exception_poc(exception_id: int, db: AsyncSession = Depends(get_session)):
+    result = await db.execute(select(ExceptionModel).where(ExceptionModel.id == exception_id))
+    row = result.scalar_one_or_none()
+    path = getattr(row, "poc_document", None) if row else None
+    if not path or not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="POC file not found")
+    return FileResponse(path, filename=os.path.basename(path), media_type="application/octet-stream")
+
+
 @router.get("/{exception_id}", response_model=ExceptionResponse)
 async def get_exception(
     exception_id: int,
@@ -235,37 +295,3 @@ async def approve_exception(
     - **approval_status**: Either 'approved' or 'rejected'
     """
     return await exception_service.approve_exception(db, exception_id, approval_status, current_user_id)
-
-
-@router.get("/expiring/soon", response_model=List[ExceptionResponse])
-async def get_expiring_exceptions(
-    days: int = Query(30, ge=1, le=365, description="Number of days to look ahead"),
-    organization_id: Optional[int] = Query(None, description="Filter by organization"),
-    db: AsyncSession = Depends(get_session),
-    current_user_id: Optional[int] = None  # TODO: Add authentication dependency
-):
-    """
-    Get exceptions expiring within the specified number of days.
-    """
-    return await exception_service.get_expiring_exceptions(db, days, organization_id)
-
-
-@router.get("/stats/overview", response_model=ExceptionStats)
-async def get_exception_statistics(
-    organization_id: Optional[int] = Query(None, description="Filter by organization"),
-    db: AsyncSession = Depends(get_session),
-    current_user_id: Optional[int] = None  # TODO: Add authentication dependency
-):
-    """
-    Get exception statistics and metrics.
-    """
-    return await exception_service.get_exception_stats(db, organization_id)
-
-
-@router.get("/meta/options", response_model=ExceptionCategoriesResponse)
-async def get_exception_options():
-    """
-    Get available options for exception categories, severities, and statuses.
-    This endpoint provides dropdown options for the frontend forms.
-    """
-    return ExceptionCategoriesResponse()

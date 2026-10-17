@@ -1,7 +1,65 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
-// https://vite.dev/config/
+const proxyTo = (target) => ({
+  target,
+  changeOrigin: true,
+});
+
 export default defineConfig({
   plugins: [react()],
-})
+  server: {
+    host: true,
+    port: 5174,
+    strictPort: true,
+    proxy: {
+      "/api/v1/applications": proxyTo("http://127.0.0.1:8001"),
+      "/api/v1/vulnerabilities": proxyTo("http://127.0.0.1:8001"),
+      "/api/v1/app-history": proxyTo("http://127.0.0.1:8001"),
+      "/api/v1/dashboard": proxyTo("http://127.0.0.1:8001"),
+      "/api/v1/reminders": proxyTo("http://127.0.0.1:8001"),
+      "/api/v1/eosl": proxyTo("http://127.0.0.1:8001"),
+      "/api/v1/audit": proxyTo("http://127.0.0.1:8002"),
+      "/api/v1/vendors": proxyTo("http://127.0.0.1:8002"),
+      "/api/v1/vendor-notifications": proxyTo("http://127.0.0.1:8002"),
+      "/api/v1/certificates": proxyTo("http://127.0.0.1:8002"),
+      "/api/v1/exceptions": proxyTo("http://127.0.0.1:8002"),
+      "/api/v1/compliance": proxyTo("http://127.0.0.1:8002"),
+      "/api/v1/assignments": proxyTo("http://127.0.0.1:8002"),
+      "/api/v1/assessments": proxyTo("http://127.0.0.1:8002"),
+      "/api/v1/tprm": proxyTo("http://127.0.0.1:8002"),
+      "/api/v1/audit-reminders": proxyTo("http://127.0.0.1:8002"),
+      "/api/v1/auth": proxyTo("http://127.0.0.1:8000"),
+      "/api/v1/users": proxyTo("http://127.0.0.1:8000"),
+      "/api/v1/login": proxyTo("http://127.0.0.1:8000"),
+      "/api/v1/register": proxyTo("http://127.0.0.1:8000"),
+      "/api/v1/organizations": proxyTo("http://127.0.0.1:8000"),
+      "/api/v1/invitations": proxyTo("http://127.0.0.1:8000"),
+      "/api/v1/roles": proxyTo("http://127.0.0.1:8000"),
+      "/api/v1/permissions": proxyTo("http://127.0.0.1:8000"),
+      "/api/v1/platform-audit": proxyTo("http://127.0.0.1:8000"),
+      "/api/v1/standards": proxyTo("http://127.0.0.1:8000"),
+      "/api/v1/smtp-configs": proxyTo("http://127.0.0.1:8000"),
+      "/api/v1/agents": proxyTo("http://127.0.0.1:8010"),
+      "/api/v1/endpoints": proxyTo("http://127.0.0.1:8010"),
+      "/api/v1/binary": proxyTo("http://127.0.0.1:8011"),
+      "/api/v1/yara": proxyTo("http://127.0.0.1:8011"),
+      "/api/v1/integrity": proxyTo("http://127.0.0.1:8012"),
+      "/api/v1/threats": proxyTo("http://127.0.0.1:8013"),
+      "/api/v1/cve": proxyTo("http://127.0.0.1:8013"),
+      "/api/v1/cloud": proxyTo("http://127.0.0.1:8014"),
+      "/api/v1/correlation": proxyTo("http://127.0.0.1:8014"),
+      "/api/v1/search": proxyTo("http://127.0.0.1:8014"),
+      "/api/v1/security-score": proxyTo("http://127.0.0.1:8014"),
+      "/api/v1/ciem": proxyTo("http://127.0.0.1:8015"),
+      "/api/v1/kubernetes": proxyTo("http://127.0.0.1:8016"),
+      "/api/v1/containers": proxyTo("http://127.0.0.1:8016"),
+      "/api/v1/runtime": proxyTo("http://127.0.0.1:8016"),
+      "/api/v1/alerts": proxyTo("http://127.0.0.1:8017"),
+      "/api/v1/notifications": proxyTo("http://127.0.0.1:8017"),
+      "/api/v1/webhooks": proxyTo("http://127.0.0.1:8017"),
+      "/api/v1/soar": proxyTo("http://127.0.0.1:8017"),
+      "/api/v1/ip-scanner": proxyTo("http://127.0.0.1:8018"),
+    },
+  },
+});

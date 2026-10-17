@@ -20,6 +20,8 @@ import ApplicationTypeChart from "../ApplicationTypeChart/ApplicationTypeChart";
 import DetailedVulnerabilityTable from "../DetailedVulnerabilityTable/DetailedVulnerabilityTable";
 import dashboardApi from "../../utils/dashboardApi";
 import dashboardTheme from "../../theme/dashboardTheme";
+import { getUserProfile } from "../../utils/auth";
+import PageShell from "../common/PageShell";
 import "../../styles/dashboardStyles.css";
 
 const Dashboard = () => {
@@ -97,12 +99,12 @@ const Dashboard = () => {
     }
   }, [overallVulnerabilityStatus, loading]);
 
-  // Get current date formatted nicely
   const currentDate = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+  const displayName = getUserProfile()?.full_name || getUserProfile()?.email || "User";
 
   return (
     <Box
@@ -115,75 +117,23 @@ const Dashboard = () => {
         transition: dashboardTheme.transitions.slow,
       }}
     >
-      {/* Dashboard Header */}
-      <Box
-        className="dashboard-header"
-        sx={{ mx: { xs: 2, md: 3 }, mt: { xs: 2, md: 3 } }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 0 }}>
-            Vulnerability Ageing
-          </Typography>
+      <PageShell
+        title="Vulnerability Ageing"
+        subtitle={`${currentDate} · ${displayName}. Open findings by age, application, and closure status.`}
+        actions={
           <Tooltip title="Refresh data">
-            <IconButton
-              onClick={fetchDashboardData}
-              disabled={loading}
-              sx={{ color: "white", opacity: 0.8, "&:hover": { opacity: 1 } }}
-            >
-              {loading ? (
-                <CircularProgress size={20} sx={{ color: "white" }} />
-              ) : (
-                <RefreshIcon />
-              )}
+            <IconButton onClick={fetchDashboardData} disabled={loading} color="primary">
+              {loading ? <CircularProgress size={20} /> : <RefreshIcon />}
             </IconButton>
           </Tooltip>
+        }
+      >
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1 }}>
+          <Chip icon={<SecurityIcon />} label={`Total ${summaryStats.total}`} color="primary" variant="outlined" />
+          <Chip icon={<WarningAmberIcon />} label={`Open ${summaryStats.open}`} color="warning" variant="outlined" />
+          <Chip icon={<TaskAltIcon />} label={`Closed ${summaryStats.closed}`} color="success" variant="outlined" />
         </Box>
-        <Typography variant="subtitle1" component="h5">
-          {currentDate} &bull; SarthakDeb
-        </Typography>
-
-        {/* Summary Stats */}
-        <Box
-          sx={{
-            display: "flex",
-            gap: "16px",
-            mt: 3,
-            flexWrap: "wrap",
-            position: "relative",
-          }}
-        >
-          <Chip
-            icon={<SecurityIcon />}
-            label={`Total: ${summaryStats.total}`}
-            sx={{
-              bgcolor: "rgba(255,255,255,0.15)",
-              color: "white",
-              fontWeight: "bold",
-              "& .MuiChip-icon": { color: "white" },
-            }}
-          />
-          <Chip
-            icon={<WarningAmberIcon />}
-            label={`Open: ${summaryStats.open}`}
-            sx={{
-              bgcolor: "rgba(255,255,255,0.15)",
-              color: "white",
-              fontWeight: "bold",
-              "& .MuiChip-icon": { color: "white" },
-            }}
-          />
-          <Chip
-            icon={<TaskAltIcon />}
-            label={`Closed: ${summaryStats.closed}`}
-            sx={{
-              bgcolor: "rgba(255,255,255,0.15)",
-              color: "white",
-              fontWeight: "bold",
-              "& .MuiChip-icon": { color: "white" },
-            }}
-          />
-        </Box>
-      </Box>
+      </PageShell>
 
       {/* Main Dashboard Content */}
       <Box sx={{ px: { xs: 2, md: 3 }, pb: 4 }}>

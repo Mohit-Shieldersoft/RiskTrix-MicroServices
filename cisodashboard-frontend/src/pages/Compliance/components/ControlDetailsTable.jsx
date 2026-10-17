@@ -12,6 +12,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import HelpIcon from '@mui/icons-material/Help';
 import dashboardTheme from '../../../theme/dashboardTheme';
+import assignmentApi from '../../../utils/assignmentApi';
 
 const ControlDetailsTable = ({ controls, onUpdate, selectedStandard }) => {
   const [localControls, setLocalControls] = useState([]);
@@ -50,49 +51,51 @@ const ControlDetailsTable = ({ controls, onUpdate, selectedStandard }) => {
     setHasChanges(true);
   };
   
-  // Handle POC upload
   const handleUploadPOC = (controlId) => {
-    // In a real app, you would open a file picker and upload
-    console.log("Uploading POC for control:", controlId);
-    
-    // Simulate successful upload
-    setTimeout(() => {
-      const updatedControls = localControls.map(control => {
-        if (control.id === controlId) {
-          return { 
-            ...control, 
-            poc: `poc_${control.section}_${control.id.replace('.', '_')}.pdf` 
-          };
-        }
-        return control;
-      });
-      
-      setLocalControls(updatedControls);
-      setHasChanges(true);
-    }, 500);
-  };
-  
-  // Handle POC download
-  const handleDownloadPOC = (poc) => {
-    // In a real app, you would download the file
-    console.log("Downloading POC:", poc);
-  };
-  
-  // Handle save changes
-  const handleSaveChanges = () => {
-    if (!hasChanges) return;
-    
-    setSaving(true);
-    
-    // Simulate API call delay
-    setTimeout(() => {
-      if (onUpdate) {
-        onUpdate(localControls);
+    const input = document.createElement("input");
+    input.type = "file";
+    input.onchange = async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      try {
+        const uploaded = await assignmentApi.uploadPoc(controlId, file);
+        const updatedControls = localControls.map((control) => (
+          control.id === controlId ? { ...control, poc: uploaded.poc || file.name } : control
+        ));
+        setLocalControls(updatedControls);
+        if (onUpdate) onUpdate(updatedControls);
+      } catch (error) {
+        console.error("Failed to upload assessment POC", error);
       }
-      
-      setSaving(false);
+    };
+    input.click();
+  };
+  
+  const handleDownloadPOC = async (control) => {
+    try {
+      const res = await assignmentApi.downloadPoc(control.id);
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${control.statement || control.id}-poc`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to download assessment POC", error);
+    }
+  };
+  
+  const handleSaveChanges = async () => {
+    if (!hasChanges) return;
+    setSaving(true);
+    try {
+      if (onUpdate) {
+        await onUpdate(localControls);
+      }
       setHasChanges(false);
-    }, 1000);
+    } finally {
+      setSaving(false);
+    }
   };
   
   // If no controls available
@@ -312,7 +315,7 @@ const ControlDetailsTable = ({ controls, onUpdate, selectedStandard }) => {
                     <Tooltip title="Download POC">
                       <IconButton 
                         size="small"
-                        onClick={() => handleDownloadPOC(control.poc)}
+                        onClick={() => handleDownloadPOC(control)}
                         sx={{ 
                           bgcolor: 'rgba(0, 121, 107, 0.1)',
                           color: dashboardTheme.colors.primary,

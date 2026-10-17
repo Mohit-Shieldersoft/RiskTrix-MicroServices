@@ -17,6 +17,7 @@ engine = create_async_engine(
     max_overflow=20,
     pool_pre_ping=True,
     pool_recycle=3600,
+    execution_options={"schema_translate_map": {None: "schema_app"}},
 )
 
 # Create async session factory

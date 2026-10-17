@@ -5,7 +5,7 @@ Used by the /application-reminder frontend page.
 """
 from datetime import datetime, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends, Body, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -136,10 +136,40 @@ async def send_reminder(
     payload: dict = Body(...),
     db: AsyncSession = Depends(get_session),
 ):
-    """Record that a reminder was sent for an application."""
-    application_id = payload.get("applicationId")
+    """Send an application/EOSL reminder by email when SMTP is configured."""
+    import smtplib
+    import os
+    from email.mime.text import MIMEText
+
+    application_id = payload.get("applicationId") or payload.get("assetId")
+    to_email = payload.get("email") or payload.get("ownerEmail")
+    if application_id and not to_email and str(application_id).isdigit():
+        result = await db.execute(select(Application).where(Application.id == int(application_id)))
+        app_row = result.scalar_one_or_none()
+        if app_row and getattr(app_row, "owner", None) and "@" in str(app_row.owner):
+            to_email = app_row.owner
+    if not to_email or "@" not in str(to_email):
+        raise HTTPException(status_code=400, detail="No recipient email on this record")
+    user = os.getenv("SMTP_USERNAME")
+    password = os.getenv("SMTP_PASSWORD")
+    host = os.getenv("SMTP_SERVER") or os.getenv("SMTP_HOST") or "smtp.gmail.com"
+    port = int(os.getenv("SMTP_PORT") or 587)
+    if not user or not password:
+        raise HTTPException(status_code=503, detail="SMTP is not configured or the email could not be sent")
+    try:
+        msg = MIMEText(payload.get("message") or f"RiskTrix reminder for record {application_id}")
+        msg["Subject"] = "RiskTrix reminder"
+        msg["From"] = user
+        msg["To"] = to_email
+        with smtplib.SMTP(host, port) as server:
+            server.starttls()
+            server.login(user, password)
+            server.send_message(msg)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"SMTP send failed: {exc}") from exc
     return {
         "success": True,
-        "message": f"Reminder recorded for application {application_id}",
+        "message": f"Reminder sent to {to_email}",
         "applicationId": application_id,
+        "remindedAt": datetime.utcnow().isoformat() if hasattr(datetime, "utcnow") else None,
     }

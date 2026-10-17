@@ -25,7 +25,7 @@ const DelayTrackerTable = ({ data }) => {
   
   const handleSendNotification = async (id) => {
     // Extract numeric vendor ID from "VEN-XXX" format
-    const vendorId = parseInt(id.split('-')[1]);
+    const vendorId = Number(id) || Number(String(id).replace(/\D/g, ""));
     
     setSentNotifications(prev => [...prev, id]);
     
@@ -240,7 +240,7 @@ const DelayTrackerTable = ({ data }) => {
                 );
               })}
             
-            {data.length === 0 && (
+            {(data || []).length === 0 && (
               <TableRow>
                 <TableCell colSpan={7} sx={{ textAlign: 'center', py: 3 }}>
                   <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -255,7 +255,7 @@ const DelayTrackerTable = ({ data }) => {
       
       <TablePagination
         component="div"
-        count={data.length}
+        count={(data || []).length}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={handleChangePage}

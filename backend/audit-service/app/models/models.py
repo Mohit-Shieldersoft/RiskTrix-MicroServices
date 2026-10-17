@@ -186,7 +186,7 @@ class ComplianceRecord(Base, TimestampMixin):
     # Foreign keys
     # application_id = Column(Integer, ForeignKey("applications.id"), nullable=False)  # Cross-service reference
     standard_id = Column(Integer, ForeignKey("compliance_standards.id"), nullable=False)
-    assessor_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    assessor_id = Column(Integer, nullable=True)  # Cross-service ref to users
     
     # Relationships
     # application = relationship("Application", back_populates="compliance_records")  # Cross-service reference
@@ -208,7 +208,7 @@ class VendorComplianceRecord(Base, TimestampMixin):
     
     # Foreign keys
     vendor_id = Column(Integer, ForeignKey("vendors.id"), nullable=False)
-    assessor_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    assessor_id = Column(Integer, nullable=True)  # Cross-service ref to users
     
     # Relationships
     vendor = relationship("Vendor", back_populates="compliance_records")
@@ -234,6 +234,7 @@ class Exception(Base, TimestampMixin):
     approval_status = Column(String(50), nullable=True, default="pending")  # pending, approved, rejected
     approved_by_id = Column(Integer, nullable=True)  # Cross-service ref to users
     approved_at = Column(DateTime(timezone=True), nullable=True)
+    poc_document = Column(String(500), nullable=True)
     
     # Foreign keys (no FK constraint — users table lives in monolith)
     # organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)  # Cross-service reference
@@ -259,7 +260,7 @@ class Assignment(Base, TimestampMixin):
     # Foreign keys
     vendor_id = Column(Integer, ForeignKey("vendors.id"), nullable=True)
     standard_id = Column(Integer, ForeignKey("compliance_standards.id"), nullable=True)
-    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by_id = Column(Integer, nullable=True)  # Cross-service ref to users
     due_date = Column(Date, nullable=True)
 
     # Relationships
@@ -283,10 +284,25 @@ class Assessment(Base, TimestampMixin):
     remark = Column(Text, nullable=True)
     poc = Column(String(500), nullable=True)
     status = Column(String(50), nullable=True)  # implemented, notImplemented, notApplicable
-    assessor_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    assessor_id = Column(Integer, nullable=True)  # Cross-service ref to users
 
     # Relationships
     assignment = relationship("Assignment", back_populates="assessments")
     vendor = relationship("Vendor")
     compliance_requirement = relationship("ComplianceRequirement")
     # assessor = relationship("User")  # Cross-service reference to shared users table
+
+
+class AuditActivityLog(Base, TimestampMixin):
+    """Local activity log. No FK to users — user_id is a cross-service reference."""
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    activity_type = Column(String(100), nullable=False)
+    entity_type = Column(String(50), nullable=True)
+    entity_id = Column(Integer, nullable=True)
+    entity_name = Column(String(255), nullable=True)
+    user_id = Column(Integer, nullable=True)
+    user_name = Column(String(255), nullable=True)
+    description = Column(Text, nullable=True)
+    extra_metadata = Column("metadata", JSON, nullable=True)

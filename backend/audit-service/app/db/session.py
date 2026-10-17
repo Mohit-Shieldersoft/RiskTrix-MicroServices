@@ -10,6 +10,7 @@ engine = create_async_engine(
     echo=settings.DEBUG,
     future=True,
     pool_pre_ping=True,
+    execution_options={"schema_translate_map": {None: "schema_audit"}},
 )
 
 # Create async session factory

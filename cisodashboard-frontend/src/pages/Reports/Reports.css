@@ -1,136 +1,61 @@
-/* Animation for page entry */
+.reports-page,
+.reports-page .MuiTypography-root,
+.reports-page .MuiTab-root,
+.reports-page .MuiChip-label,
+.reports-page .MuiButton-root,
+.reports-page .MuiTableCell-root {
+  font-family: "Segoe UI", Roboto, Arial, sans-serif !important;
+  letter-spacing: normal !important;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
+  font-synthesis: none;
+}
+
+.reports-page h1 {
+  letter-spacing: 0 !important;
+  font-weight: 700 !important;
+}
+
 @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
-  
-  /* Pulse animation for empty state */
-  @keyframes pulse {
-    0% {
-      opacity: 0.6;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 1;
-      transform: scale(1.02);
-    }
-    100% {
-      opacity: 0.6;
-      transform: scale(1);
-    }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  
-  /* Futuristic card styles */
-  .futuristic-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f5f7fc 100%);
-    border-radius: 16px;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    overflow: hidden;
-    position: relative;
-  }
-  
-  .futuristic-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Dashboard header */
-  .dashboard-header {
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .dashboard-header::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(
-      circle,
-      rgba(255, 255, 255, 0.1) 0%,
-      rgba(255, 255, 255, 0) 70%
-    );
-    animation: rotate 20s linear infinite;
-    pointer-events: none;
-  }
-  
-  @keyframes rotate {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-  
-  /* Search panel animation */
-  .search-panel {
-    animation: fadeIn 0.5s ease-out;
-  }
-  
-  /* Pulse animation for empty state */
-  .pulse-animation {
-    animation: pulse 3s infinite;
-  }
-  
-  /* Custom scrollbar */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  
-  ::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 8px;
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background: rgba(0, 121, 107, 0.5);
-    border-radius: 8px;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 121, 107, 0.7);
-  }
-  
-  /* App summary fade-in */
-  .app-summary {
-    animation: fadeIn 0.8s ease-out 0.2s both;
-  }
-  
-  /* Tooltip styling */
-  .custom-tooltip {
-    background: rgba(255, 255, 255, 0.95) !important;
-    border-radius: 8px !important;
-    padding: 8px 12px !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
-    border: 1px solid #eeeeee !important;
-    font-size: 0.875rem !important;
-  }
-  
-  /* Chart legend hover effect */
-  .legend-item:hover {
-    transform: translateX(2px);
-    transition: transform 0.2s ease;
-  }
-  
-  /* Responsive adjustments */
-  @media (max-width: 960px) {
-    .dashboard-header {
-      padding: 16px;
-    }
-    
-    .dashboard-header h1 {
-      font-size: 1.5rem;
-    }
-  }
+}
+
+.search-panel,
+.app-summary {
+  animation: fadeIn 0.35s ease-out;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(63, 81, 181, 0.04);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(63, 81, 181, 0.35);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(63, 81, 181, 0.55);
+}
+
+.custom-tooltip {
+  background: rgba(255, 255, 255, 0.97) !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  box-shadow: 0 4px 20px rgba(63, 81, 181, 0.12) !important;
+  border: 1px solid rgba(63, 81, 181, 0.12) !important;
+  font-size: 0.875rem !important;
+}

@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict, Any
 from datetime import datetime, date
-from pydantic import BaseModel, Field, EmailStr, validator
+from pydantic import BaseModel, Field, validator, EmailStr
 from enum import Enum
 
 from app.models.models import RiskLevel, ComplianceStatus
@@ -24,7 +24,7 @@ class VendorBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=2000)
     category: Optional[str] = Field(None, max_length=100, description="Vendor category")
-    contact_email: Optional[EmailStr] = None
+    contact_email: Optional[str] = None
     contact_phone: Optional[str] = Field(None, max_length=20)
     website: Optional[str] = Field(None, max_length=255)
     
@@ -130,6 +130,7 @@ class VendorResponse(VendorBase):
     # Related data
     compliance_records_count: Optional[int] = 0
     active_vulnerabilities_count: Optional[int] = 0
+    message: Optional[str] = None
     
     class Config:
         from_attributes = True

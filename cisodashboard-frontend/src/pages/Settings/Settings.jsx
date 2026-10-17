@@ -50,6 +50,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import dashboardTheme from "../../theme/dashboardTheme";
+import api from "../../utils/api";
 
 // Styled components for file upload
 const VisuallyHiddenInput = styled("input")({
@@ -82,11 +83,246 @@ function TabPanel(props) {
   );
 }
 
+function OrganizationSettingsPanel() {
+  const [org, setOrg] = useState({ name: "", description: "", industry: "", website: "", contact_email: "" });
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    api
+      .get("/api/v1/organizations/me")
+      .then((res) => setOrg({ ...org, ...res.data }))
+      .catch(() => {});
+  }, []);
+
+  const save = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (org.name) params.set("name", org.name);
+      if (org.description != null) params.set("description", org.description);
+      if (org.industry) params.set("industry", org.industry);
+      if (org.website) params.set("website", org.website);
+      if (org.contact_email) params.set("contact_email", org.contact_email);
+      const res = await api.patch(`/api/v1/organizations/me?${params.toString()}`);
+      setOrg({ ...org, ...res.data });
+      setMessage("Organization updated");
+    } catch (err) {
+      setMessage(err.response?.data?.detail || "Unable to update organization");
+    }
+  };
+
+  return (
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+        Organization
+      </Typography>
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={6}>
+          <TextField fullWidth label="Name" value={org.name || ""} onChange={(e) => setOrg({ ...org, name: e.target.value })} />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <TextField fullWidth label="Industry" value={org.industry || ""} onChange={(e) => setOrg({ ...org, industry: e.target.value })} />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField fullWidth multiline minRows={2} label="Description" value={org.description || ""} onChange={(e) => setOrg({ ...org, description: e.target.value })} />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <TextField fullWidth label="Website" value={org.website || ""} onChange={(e) => setOrg({ ...org, website: e.target.value })} />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <TextField fullWidth label="Contact email" value={org.contact_email || ""} onChange={(e) => setOrg({ ...org, contact_email: e.target.value })} />
+        </Grid>
+      </Grid>
+      <Button sx={{ mt: 2 }} variant="contained" onClick={save}>
+        Save organization
+      </Button>
+      {message && <Alert sx={{ mt: 2 }}>{message}</Alert>}
+    </Box>
+  );
+}
+
+function InvitationsPanel() {
+  const [invites, setInvites] = useState([]);
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("VIEWER");
+  const [message, setMessage] = useState("");
+
+  const load = async () => {
+    try {
+      const res = await api.get("/api/v1/invitations");
+      setInvites(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setInvites([]);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const invite = async () => {
+    try {
+      await api.post(`/api/v1/invitations?email=${encodeURIComponent(email)}&role=${encodeURIComponent(role)}`);
+      setEmail("");
+      setMessage(`Invitation sent to ${email}`);
+      load();
+    } catch (err) {
+      setMessage(err.response?.data?.detail || "Invite failed");
+    }
+  };
+
+  return (
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+        Invitations
+      </Typography>
+      <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
+        <TextField size="small" label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <FormControl size="small" sx={{ minWidth: 160 }}>
+          <InputLabel>Role</InputLabel>
+          <Select label="Role" value={role} onChange={(e) => setRole(e.target.value)}>
+            <MenuItem value="VIEWER">Viewer</MenuItem>
+            <MenuItem value="SECURITY_ANALYST">Security Analyst</MenuItem>
+            <MenuItem value="CISO">CISO</MenuItem>
+            <MenuItem value="ADMIN">Admin</MenuItem>
+          </Select>
+        </FormControl>
+        <Button variant="contained" onClick={invite} disabled={!email}>
+          Send invite
+        </Button>
+      </Box>
+      {message && <Alert sx={{ mb: 2 }}>{message}</Alert>}
+      <TableContainer>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Email</TableCell>
+              <TableCell>Role</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Expires</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {invites.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5}>No invitations yet.</TableCell>
+              </TableRow>
+            ) : (
+              invites.map((inviteRow) => (
+                <TableRow key={inviteRow.id}>
+                  <TableCell>{inviteRow.email}</TableCell>
+                  <TableCell>{inviteRow.role}</TableCell>
+                  <TableCell>{inviteRow.status}</TableCell>
+                  <TableCell>{inviteRow.expires_at}</TableCell>
+                  <TableCell>
+                    <Button size="small" onClick={() => api.post(`/api/v1/invitations/${inviteRow.id}/resend`).then(load)}>
+                      Resend
+                    </Button>
+                    <Button size="small" color="error" onClick={() => api.post(`/api/v1/invitations/${inviteRow.id}/revoke`).then(load)}>
+                      Revoke
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
+  );
+}
+
+function PlatformAuditPanel() {
+  const [logs, setLogs] = useState([]);
+  const [message, setMessage] = useState("");
+  const [search, setSearch] = useState("");
+  const [actionFilter, setActionFilter] = useState("");
+
+  const load = async () => {
+    try {
+      const res = await api.get("/api/v1/platform-audit");
+      setLogs(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setLogs([]);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const exportCsv = async () => {
+    try {
+      const res = await api.get("/api/v1/platform-audit/export");
+      const blob = new Blob([res.data.content || ""], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "platform-audit.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+      setMessage(`Exported ${res.data.count || 0} audit events`);
+    } catch (err) {
+      setMessage(err.response?.data?.detail || "Export failed");
+    }
+  };
+
+  return (
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          Platform Audit
+        </Typography>
+        <Button variant="outlined" onClick={exportCsv}>
+          Export CSV
+        </Button>
+      </Box>
+      {message && <Alert sx={{ mb: 2 }}>{message}</Alert>}
+      <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
+        <TextField size="small" placeholder="Search actor or detail" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <TextField size="small" placeholder="Filter action" value={actionFilter} onChange={(e) => setActionFilter(e.target.value)} />
+      </Box>
+      <TableContainer>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Time</TableCell>
+              <TableCell>Action</TableCell>
+              <TableCell>Actor</TableCell>
+              <TableCell>Detail</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {logs.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4}>No platform audit events yet.</TableCell>
+              </TableRow>
+            ) : (
+              logs.filter((row) => {
+                const hay = `${row.actor || ""} ${row.detail || ""}`.toLowerCase();
+                if (search && !hay.includes(search.toLowerCase())) return false;
+                if (actionFilter && !String(row.action || "").toLowerCase().includes(actionFilter.toLowerCase())) return false;
+                return true;
+              }).map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell>{row.created_at}</TableCell>
+                  <TableCell>{row.action}</TableCell>
+                  <TableCell>{row.actor}</TableCell>
+                  <TableCell>{row.detail}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
+  );
+}
+
 // Main component
 const Settings = () => {
   const theme = useTheme();
-  const API_BASE_URL =
-    import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  const API_BASE_URL = "http://127.0.0.1:8000";
   const API_PREFIX = "/api/v1";
   const [tabValue, setTabValue] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -123,47 +359,14 @@ const Settings = () => {
   });
 
   // Mock data for demonstration
-  const [profiles, setProfiles] = useState([
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john@example.com",
-      type: "client",
-      company: "ABC Corp",
-      createdAt: "2025-03-15",
-      privilegeLevel: "admin",
-      clearanceLevel: "high",
-      status: "active",
-    },
-    {
-      id: 2,
-      name: "Sarah Connor",
-      email: "sarah@terminator.com",
-      type: "security",
-      company: "Cyberdyne Systems",
-      createdAt: "2025-04-01",
-      privilegeLevel: "standard",
-      clearanceLevel: "top",
-      status: "active",
-    },
-    {
-      id: 3,
-      name: "Mike Ross",
-      email: "mike@pearson.com",
-      type: "auditor",
-      company: "Pearson Hardman",
-      createdAt: "2025-04-12",
-      privilegeLevel: "standard",
-      clearanceLevel: "medium",
-      status: "inactive",
-    },
-  ]);
+  const [profiles, setProfiles] = useState([]);
+  const [profileSearch, setProfileSearch] = useState("");
 
   // Load profiles from backend
   const loadProfiles = async () => {
     // use module-level API_BASE_URL/API_PREFIX
     try {
-      const res = await axios.get(`${API_BASE_URL}${API_PREFIX}/users/`);
+      const res = await api.get(`/api/v1/users/`);
       const items = res.data?.items || [];
       const normalized = items.map((u, idx) => {
         // Accept multiple possible backend keys and normalize to lowercase where appropriate
@@ -215,43 +418,20 @@ const Settings = () => {
       setProfiles(normalized);
     } catch (err) {
       console.error("Failed to load profiles from backend:", err);
-      // keep existing mock profiles if fetch fails
+      setProfiles([]);
     }
   };
 
   // fetch profiles on mount
   useEffect(() => {
     loadProfiles();
+    api.get("/api/v1/standards").then((res) => setStandards(Array.isArray(res.data) ? res.data : [])).catch(() => setStandards([]));
+    api.get("/api/v1/smtp-configs").then((res) => setSmtpConfigs(Array.isArray(res.data) ? res.data : [])).catch(() => setSmtpConfigs([]));
   }, []);
 
-  const [standards, setStandards] = useState([
-    {
-      id: 1,
-      name: "PCI DSS v4",
-      type: "Payment Security",
-      uploadedOn: "2025-03-10",
-      fileType: "xlsx",
-      controls: 264,
-    },
-    {
-      id: 2,
-      name: "ISO 27001",
-      type: "Information Security",
-      uploadedOn: "2025-04-05",
-      fileType: "pdf",
-      controls: 114,
-    },
-  ]);
+  const [standards, setStandards] = useState([]);
 
-  const [smtpConfigs, setSmtpConfigs] = useState([
-    {
-      id: 1,
-      email: "noreply@company.com",
-      host: "smtp.company.com",
-      port: 587,
-      active: true,
-    },
-  ]);
+  const [smtpConfigs, setSmtpConfigs] = useState([]);
 
   // Handle tab change
   const handleTabChange = (event, newValue) => {
@@ -375,12 +555,9 @@ const Settings = () => {
         // update existing user
         // don't send empty password
         if (!payload.password) delete payload.password;
-        res = await axios.put(
-          `${API_BASE_URL}${API_PREFIX}/users/${editingUserId}`,
-          payload,
-        );
+        res = await api.put(`/api/v1/users/${editingUserId}`, payload);
       } else {
-        res = await axios.post(`${API_BASE_URL}${API_PREFIX}/users/`, payload);
+        res = await api.post(`/api/v1/users/`, payload);
       }
       const created = res.data;
 
@@ -485,9 +662,7 @@ const Settings = () => {
     setConfirmOpen(false);
     if (!userId) return;
     try {
-      const res = await axios.delete(
-        `${API_BASE_URL}${API_PREFIX}/users/${userId}`,
-      );
+      const res = await api.delete(`/api/v1/users/${userId}`);
       if (res.status === 200 || res.status === 204) {
         await loadProfiles();
         setToast({
@@ -518,44 +693,58 @@ const Settings = () => {
 
   const closeToast = () => setToast((prev) => ({ ...prev, open: false }));
 
-  const handleStandardSubmit = (e) => {
+  const handleStandardSubmit = async (e) => {
     e.preventDefault();
-    const newStandard = {
-      ...standardForm,
-      id: standards.length + 1,
-      uploadedOn: new Date().toISOString().split("T")[0],
-      fileType: standardForm.file
-        ? standardForm.file.name.split(".").pop()
-        : "",
-      controls: Math.floor(Math.random() * 200) + 50, // Mock data
-    };
-    setStandards([...standards, newStandard]);
-    setStandardForm({
-      name: "",
-      type: "",
-      description: "",
-      file: null,
-    });
-    showSuccessMessage();
+    try {
+      const res = await api.post("/api/v1/standards", {
+        name: standardForm.name,
+        type: standardForm.type,
+        description: standardForm.description,
+        file_name: standardForm.file ? standardForm.file.name : "",
+        file_type: standardForm.file ? standardForm.file.name.split(".").pop() : "",
+        controls: 0,
+      });
+      setStandards([...standards, res.data]);
+      setStandardForm({
+        name: "",
+        type: "",
+        description: "",
+        file: null,
+      });
+      showSuccessMessage();
+    } catch (err) {
+      setToast({
+        open: true,
+        message: err?.response?.data?.detail || "Unable to save standard",
+        severity: "error",
+      });
+    }
   };
 
-  const handleSmtpSubmit = (e) => {
+  const handleSmtpSubmit = async (e) => {
     e.preventDefault();
-    const newSmtp = {
-      ...smtpForm,
-      id: smtpConfigs.length + 1,
-      active: true,
-    };
-    setSmtpConfigs([...smtpConfigs, newSmtp]);
-    setSmtpForm({
-      email: "",
-      host: "",
-      username: "",
-      password: "",
-      port: "",
-      description: "",
-    });
-    showSuccessMessage();
+    try {
+      const res = await api.post("/api/v1/smtp-configs", {
+        ...smtpForm,
+        active: true,
+      });
+      setSmtpConfigs([...smtpConfigs, res.data]);
+      setSmtpForm({
+        email: "",
+        host: "",
+        username: "",
+        password: "",
+        port: "",
+        description: "",
+      });
+      showSuccessMessage();
+    } catch (err) {
+      setToast({
+        open: true,
+        message: err?.response?.data?.detail || "Unable to save SMTP config",
+        severity: "error",
+      });
+    }
   };
 
   // Show success message temporarily
@@ -647,12 +836,14 @@ const Settings = () => {
           mb: 3,
           overflow: "hidden",
         }}
-        className="futuristic-card"
+        className="settings-card"
       >
         <Tabs
           value={tabValue}
           onChange={handleTabChange}
-          variant="fullWidth"
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
           indicatorColor="secondary"
           textColor="primary"
           sx={{
@@ -674,6 +865,9 @@ const Settings = () => {
             iconPosition="start"
             label="Email Settings"
           />
+          <Tab icon={<BusinessIcon />} iconPosition="start" label="Organization" />
+          <Tab icon={<MailOutlineIcon />} iconPosition="start" label="Invitations" />
+          <Tab icon={<DescriptionIcon />} iconPosition="start" label="Platform Audit" />
         </Tabs>
 
         {/* Profiles Tab */}
@@ -954,6 +1148,8 @@ const Settings = () => {
                 <TextField
                   fullWidth
                   placeholder="Search profiles..."
+                  value={profileSearch}
+                  onChange={(e) => setProfileSearch(e.target.value)}
                   sx={{ mb: 2 }}
                   InputProps={{
                     startAdornment: (
@@ -995,7 +1191,15 @@ const Settings = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {profiles.map((profile) => (
+                      {profiles
+                        .filter((profile) => {
+                          const q = profileSearch.trim().toLowerCase();
+                          if (!q) return true;
+                          return [profile.name, profile.email, profile.username, profile.role, profile.company]
+                            .filter(Boolean)
+                            .some((v) => String(v).toLowerCase().includes(q));
+                        })
+                        .map((profile) => (
                         <TableRow key={profile.id} hover>
                           <TableCell>
                             <Box
@@ -1727,6 +1931,15 @@ const Settings = () => {
               </Grid>
             </Grid>
           </Box>
+        </TabPanel>
+        <TabPanel value={tabValue} index={3}>
+          <OrganizationSettingsPanel />
+        </TabPanel>
+        <TabPanel value={tabValue} index={4}>
+          <InvitationsPanel />
+        </TabPanel>
+        <TabPanel value={tabValue} index={5}>
+          <PlatformAuditPanel />
         </TabPanel>
       </Paper>
     </Box>

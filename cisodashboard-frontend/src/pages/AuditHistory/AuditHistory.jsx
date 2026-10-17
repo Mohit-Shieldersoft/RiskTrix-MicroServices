@@ -15,7 +15,6 @@ import {
 import ExpiredVendorsTable from "./components/ExpiredVendorsTable";
 import ExceptionTrendsChart from "./components/ExceptionTrendsChart";
 import StandardComplianceChart from "./components/StandardComplianceChart";
-import { generateMockAuditHistoryData } from "./mockData";
 import auditApi from "../../utils/auditApi";
 import { getUserProfile } from "../../utils/auth";
 import dashboardTheme from "../../theme/dashboardTheme";
@@ -44,9 +43,13 @@ const AuditHistory = () => {
         setData(apiData);
       } catch (err) {
         console.error("Failed to load audit history:", err);
-        // fallback to mock data if API fails
-        const mockData = generateMockAuditHistoryData();
-        setData(mockData);
+        setData({
+          complianceHistory: [],
+          tprmCompliance: [],
+          expiredVendors: [],
+          exceptionTrends: [],
+          standardCompliance: { iso27001: [], pcidss: [] },
+        });
       } finally {
         setLoading(false);
       }

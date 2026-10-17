@@ -13,6 +13,7 @@ engine = create_async_engine(
     max_overflow=30,
     pool_pre_ping=True,
     pool_recycle=3600,
+    execution_options={"schema_translate_map": {None: "schema_identity"}},
 )
 
 # Create sync engine for migrations
@@ -23,6 +24,7 @@ sync_engine = create_engine(
     max_overflow=30,
     pool_pre_ping=True,
     pool_recycle=3600,
+    execution_options={"schema_translate_map": {None: "schema_identity"}},
 )
 
 # Create async session factory

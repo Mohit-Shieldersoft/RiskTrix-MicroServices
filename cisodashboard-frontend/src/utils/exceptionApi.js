@@ -112,6 +112,19 @@ export const exceptionApi = {
     }
   },
 
+  uploadPoc: async (id, file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post(`${EXCEPTION_API_BASE_URL}/${id}/poc-upload`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+
+  downloadPoc: async (id) => {
+    return api.get(`${EXCEPTION_API_BASE_URL}/${id}/poc`, { responseType: "blob" });
+  },
+
   // Update exception expiry date
   updateExpiry: async (exceptionId, expiryData) => {
     try {

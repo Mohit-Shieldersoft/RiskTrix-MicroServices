@@ -95,6 +95,7 @@ class ExceptionResponse(ExceptionBase):
     approval_status: Optional[str] = None
     approved_by_id: Optional[int] = None
     approved_at: Optional[datetime] = None
+    poc_document: Optional[str] = None
     organization_id: Optional[int] = None
     created_by_id: Optional[int] = None
     assigned_to_id: Optional[int] = None

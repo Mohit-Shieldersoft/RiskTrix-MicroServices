@@ -397,7 +397,8 @@ class ExceptionService:
                 created_at=exception.created_at,
                 updated_at=exception.updated_at,
                 is_expired=is_expired,
-                days_remaining=days_remaining
+                days_remaining=days_remaining,
+                poc_document=getattr(exception, "poc_document", None),
             )
         except Exception as e:
             logger.error(f"Error converting exception to response: {e}")

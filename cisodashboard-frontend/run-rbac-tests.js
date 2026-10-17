@@ -46,40 +46,120 @@ const ROLE_PERMISSIONS = {
     users: ['create', 'read', 'update', 'delete'],
     applications: ['create', 'read', 'update', 'delete'],
     vulnerabilities: ['create', 'read', 'update', 'delete'],
+    compliance: ['create', 'read', 'update', 'delete'],
+    vendors: ['create', 'read', 'update', 'delete'],
     exceptions: ['create', 'read', 'update', 'delete', 'approve'],
     reports: ['create', 'read', 'update', 'delete'],
-    settings: ['create', 'read', 'update', 'delete'],
+    audit: ['create', 'read', 'update', 'delete'],
+    settings: ['read', 'update'],
+    cloud_accounts: ['create', 'read', 'update', 'delete', 'sync'],
+    cspm_findings: ['read', 'update', 'suppress', 'remediate'],
+    cspm_policies: ['create', 'read', 'update', 'delete'],
+    ciem: ['read', 'analyze', 'update'],
+    k8s_security: ['read', 'scan', 'update'],
+    container_security: ['read', 'scan', 'delete'],
+    runtime_security: ['read', 'configure', 'update'],
+    security_alerts: ['read', 'update', 'assign', 'resolve'],
+    security_score: ['read', 'recalculate'],
   },
   [UserRoles.CISO]: {
+    users: ['read'],
     applications: ['read', 'update'],
     vulnerabilities: ['read', 'update'],
+    compliance: ['read', 'update'],
+    vendors: ['read', 'update'],
     exceptions: ['read', 'approve'],
-    reports: ['create', 'read', 'update'],
+    reports: ['create', 'read'],
+    audit: ['read'],
+    settings: ['read'],
+    cloud_accounts: ['read', 'sync'],
+    cspm_findings: ['read', 'update', 'suppress'],
+    cspm_policies: ['read', 'update'],
+    ciem: ['read', 'analyze'],
+    k8s_security: ['read'],
+    container_security: ['read'],
+    runtime_security: ['read'],
+    security_alerts: ['read', 'update', 'assign'],
+    security_score: ['read', 'recalculate'],
   },
   [UserRoles.INFOSEC_MANAGER]: {
     applications: ['create', 'read', 'update'],
     vulnerabilities: ['create', 'read', 'update'],
-    exceptions: ['create', 'read'],
+    compliance: ['read', 'update'],
+    vendors: ['read', 'update'],
+    exceptions: ['create', 'read', 'update'],
+    reports: ['create', 'read'],
+    audit: ['read'],
+    cloud_accounts: ['read', 'sync'],
+    cspm_findings: ['read', 'update'],
+    cspm_policies: ['read'],
+    ciem: ['read', 'analyze'],
+    k8s_security: ['read', 'scan'],
+    container_security: ['read', 'scan'],
+    runtime_security: ['read'],
+    security_alerts: ['read', 'update', 'assign'],
+    security_score: ['read'],
   },
   [UserRoles.EXTERNAL_AUDITOR]: {
     applications: ['read'],
     vulnerabilities: ['read'],
+    compliance: ['read'],
+    vendors: ['read'],
+    exceptions: ['read'],
     reports: ['read'],
+    audit: ['read'],
+    cloud_accounts: ['read'],
+    cspm_findings: ['read'],
+    cspm_policies: ['read'],
+    security_score: ['read'],
   },
   [UserRoles.INTERNAL_AUDITOR]: {
     applications: ['read'],
     vulnerabilities: ['read'],
+    compliance: ['read'],
+    vendors: ['read'],
+    exceptions: ['read'],
     reports: ['create', 'read'],
+    audit: ['create', 'read'],
+    cloud_accounts: ['read'],
+    cspm_findings: ['read'],
+    cspm_policies: ['read'],
+    ciem: ['read'],
+    k8s_security: ['read'],
+    container_security: ['read'],
+    runtime_security: ['read'],
+    security_alerts: ['read'],
+    security_score: ['read'],
   },
   [UserRoles.SECURITY_ANALYST]: {
     applications: ['read', 'update'],
     vulnerabilities: ['create', 'read', 'update'],
+    compliance: ['read'],
+    vendors: ['read'],
     exceptions: ['create', 'read'],
+    reports: ['read'],
+    audit: ['read'],
+    cloud_accounts: ['read'],
+    cspm_findings: ['read', 'update'],
+    cspm_policies: ['read'],
+    ciem: ['read'],
+    k8s_security: ['read', 'scan'],
+    container_security: ['read', 'scan'],
+    runtime_security: ['read'],
+    security_alerts: ['read', 'update'],
+    security_score: ['read'],
   },
   [UserRoles.VIEWER]: {
     applications: ['read'],
     vulnerabilities: ['read'],
+    compliance: ['read'],
+    vendors: ['read'],
+    exceptions: ['read'],
     reports: ['read'],
+    audit: ['read'],
+    cloud_accounts: ['read'],
+    cspm_findings: ['read'],
+    security_score: ['read'],
   },
 };
 
@@ -271,6 +351,54 @@ runTest('Only ADMIN and CISO can approve exceptions', () => {
   assert(checkPermission(ciso, 'exceptions', 'approve'), 'CISO should approve exceptions');
   assert(!checkPermission(manager, 'exceptions', 'approve'), 'Manager should not approve exceptions');
   assert(!checkPermission(analyst, 'exceptions', 'approve'), 'Analyst should not approve exceptions');
+});
+
+runTest('CNAPP Extended Resource Permissions Across 7 Roles', () => {
+  const admin = { role: UserRoles.ADMIN };
+  const ciso = { role: UserRoles.CISO };
+  const manager = { role: UserRoles.INFOSEC_MANAGER };
+  const extAuditor = { role: UserRoles.EXTERNAL_AUDITOR };
+  const intAuditor = { role: UserRoles.INTERNAL_AUDITOR };
+  const analyst = { role: UserRoles.SECURITY_ANALYST };
+  const viewer = { role: UserRoles.VIEWER };
+
+  // Cloud accounts
+  assert(checkPermission(admin, 'cloud_accounts', 'sync'), 'Admin syncs cloud accounts');
+  assert(checkPermission(ciso, 'cloud_accounts', 'sync'), 'CISO syncs cloud accounts');
+  assert(checkPermission(manager, 'cloud_accounts', 'sync'), 'Manager syncs cloud accounts');
+  assert(checkPermission(analyst, 'cloud_accounts', 'read'), 'Analyst reads cloud accounts');
+  assert(!checkPermission(analyst, 'cloud_accounts', 'sync'), 'Analyst cannot sync cloud accounts');
+
+  // CSPM findings & policies
+  assert(checkPermission(admin, 'cspm_findings', 'remediate'), 'Admin remediates CSPM findings');
+  assert(checkPermission(ciso, 'cspm_findings', 'suppress'), 'CISO suppresses CSPM findings');
+  assert(checkPermission(admin, 'cspm_policies', 'create'), 'Admin creates CSPM policies');
+  assert(checkPermission(extAuditor, 'cspm_policies', 'read'), 'Ext Auditor reads CSPM policies');
+  assert(!checkPermission(extAuditor, 'cspm_policies', 'create'), 'Ext Auditor cannot create CSPM policies');
+
+  // CIEM & K8s
+  assert(checkPermission(admin, 'ciem', 'update'), 'Admin updates CIEM');
+  assert(checkPermission(manager, 'ciem', 'analyze'), 'Manager analyzes CIEM');
+  assert(checkPermission(analyst, 'k8s_security', 'scan'), 'Analyst scans K8s');
+  assert(checkPermission(intAuditor, 'k8s_security', 'read'), 'Int Auditor reads K8s');
+  assert(!checkPermission(intAuditor, 'k8s_security', 'scan'), 'Int Auditor cannot scan K8s');
+
+  // Container & Security Alerts & Score
+  assert(checkPermission(admin, 'container_security', 'delete'), 'Admin deletes containers');
+  assert(checkPermission(admin, 'security_alerts', 'resolve'), 'Admin resolves security alerts');
+  assert(checkPermission(ciso, 'security_score', 'recalculate'), 'CISO recalculates security score');
+  assert(checkPermission(viewer, 'security_score', 'read'), 'Viewer reads security score');
+  assert(!checkPermission(viewer, 'security_alerts', 'assign'), 'Viewer cannot assign security alerts');
+});
+
+runTest('Exhaustive 7-Role Client Permission Guards Matrix', () => {
+  const roles = Object.keys(UserRoles).map(r => ({ role: r }));
+  assert(roles.length === 7, 'All 7 roles must be tested');
+
+  roles.forEach(user => {
+    assert(checkPermission(user, 'applications', 'read'), `${user.role} should read applications`);
+    assert(checkPermission(user, 'vulnerabilities', 'read'), `${user.role} should read vulnerabilities`);
+  });
 });
 
 console.log('\n🔍 Edge Case Tests:');

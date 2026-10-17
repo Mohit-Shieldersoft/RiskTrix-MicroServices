@@ -12,7 +12,7 @@ import UpdateIcon from '@mui/icons-material/Update';
 import PersonIcon from '@mui/icons-material/Person';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import CloseIcon from '@mui/icons-material/Close';
-import { generateMockNotifications } from './mockNotification';
+import api from '../../utils/api';
 import './NotificationPanel.css';
 
 // Styled components
@@ -63,11 +63,28 @@ const NotificationPanel = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const panelRef = useRef(null);
   
-  // Load notification data
   useEffect(() => {
-    const data = generateMockNotifications();
-    setNotificationData(data);
-    setUnreadCount(data.filter(notification => !notification.read).length);
+    const load = async () => {
+      try {
+        const res = await api.get("/api/v1/alerts");
+        const rows = Array.isArray(res.data) ? res.data : [];
+        const data = rows.map((alert) => ({
+          id: alert.alert_id || alert.id,
+          title: alert.title || "Security alert",
+          message: alert.description || alert.source_service || "",
+          type: "alert",
+          read: ["DISMISSED", "RESOLVED", "CLOSED"].includes((alert.status || "").toUpperCase()),
+          timestamp: alert.created_at || new Date().toISOString(),
+          user: alert.assigned_to || alert.source_service || "System",
+        }));
+        setNotificationData(data);
+        setUnreadCount(data.filter((item) => !item.read).length);
+      } catch {
+        setNotificationData([]);
+        setUnreadCount(0);
+      }
+    };
+    load();
   }, []);
   
   // Handle click outside to close panel
@@ -136,7 +153,7 @@ const NotificationPanel = () => {
   };
   
   const getTimeAgo = (timestamp) => {
-    const now = new Date('2025-04-18T10:03:19');
+    const now = new Date();
     const notifTime = new Date(timestamp);
     const diffSeconds = Math.floor((now - notifTime) / 1000);
     

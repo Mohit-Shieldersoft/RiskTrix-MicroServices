@@ -26,6 +26,7 @@ import {
   InputAdornment,
   CircularProgress,
   Stack,
+  Alert,
 } from "@mui/material";
 import Toast from "../../components/common/Toast";
 import { useToast } from "../../components/common/useToast";
@@ -108,6 +109,11 @@ const AdminUsers = () => {
   // Delete confirm
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("VIEWER");
+  const [inviting, setInviting] = useState(false);
 
   // Toast
   const { toast, showToast, closeToast } = useToast();
@@ -290,6 +296,9 @@ const AdminUsers = () => {
               <RefreshIcon />
             </IconButton>
           </Tooltip>
+          <Button variant="outlined" onClick={() => setInviteOpen(true)}>
+            Invite User
+          </Button>
           <Button
             variant="contained"
             startIcon={<PersonAddIcon />}
@@ -694,6 +703,55 @@ const AdminUsers = () => {
             startIcon={saving ? <CircularProgress size={16} /> : null}
           >
             {saving ? "Saving…" : editingId ? "Save Changes" : "Create User"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={inviteOpen} onClose={() => setInviteOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle fontWeight={700}>Invite User</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              size="small"
+              fullWidth
+              label="Email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+            />
+            <FormControl size="small" fullWidth>
+              <InputLabel>Role</InputLabel>
+              <Select label="Role" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
+                {ROLES.map((role) => (
+                  <MenuItem key={role} value={role}>
+                    {role.replace(/_/g, " ")}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setInviteOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={inviting || !inviteEmail}
+            onClick={async () => {
+              setInviting(true);
+              try {
+                await api.post(
+                  `/api/v1/invitations?email=${encodeURIComponent(inviteEmail)}&role=${encodeURIComponent(inviteRole)}`
+                );
+                showToast(`Invitation sent to ${inviteEmail}`);
+                setInviteOpen(false);
+                setInviteEmail("");
+              } catch (err) {
+                showToast(err?.response?.data?.detail || "Invite failed", "error");
+              } finally {
+                setInviting(false);
+              }
+            }}
+          >
+            {inviting ? "Sending…" : "Send Invite"}
           </Button>
         </DialogActions>
       </Dialog>

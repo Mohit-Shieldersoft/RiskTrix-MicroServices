@@ -26,11 +26,35 @@ const CVEFindings = () => {
   const [loading, setLoading] = useState(false);
   const [binaryName, setBinaryName] = useState("");
   const [version, setVersion] = useState("");
+  const [severityFilter, setSeverityFilter] = useState("ALL");
   const { toast, showToast, closeToast } = useToast();
+
+  useEffect(() => {
+    fetchCVEFindings();
+  }, []);
+
+  const fetchCVEFindings = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get("/api/v1/cve/findings");
+      if (response.data && Array.isArray(response.data)) {
+        setCves(response.data);
+      } else if (response.data && Array.isArray(response.data.cves)) {
+        setCves(response.data.cves);
+      } else {
+        setCves([]);
+      }
+    } catch (err) {
+      console.warn("Could not fetch CVE findings:", err);
+      setCves([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const lookupCVEs = async () => {
     if (!binaryName) {
-      showToast("Please enter binary name", "warning");
+      fetchCVEFindings();
       return;
     }
     try {
@@ -97,7 +121,7 @@ const CVEFindings = () => {
                     cves.map((cve, index) => (
                       <TableRow key={index}>
                         <TableCell>{cve.cve_id}</TableCell>
-                        <TableCell>{cve.description}</TableCell>
+                        <TableCell>{cve.description || cve.summary || "No description available"}</TableCell>
                         <TableCell>{cve.cvss_score || "N/A"}</TableCell>
                         <TableCell>
                           <Chip

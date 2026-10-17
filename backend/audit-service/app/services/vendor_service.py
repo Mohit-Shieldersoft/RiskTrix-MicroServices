@@ -443,10 +443,11 @@ class VendorService:
         application_name: str,
         owner_id: Optional[int] = None
     ) -> Optional[int]:
-        """Create an application and return its ID"""
-        # TODO: Cross-service dependency - temporarily disabled
-        # Needs HTTP call to application-service or direct DB access
-        logger.warning(f"Application creation disabled - cannot create: {application_name}")
+        """Skip cross-service application create. Documented on vendor create API message."""
+        logger.warning(
+            "Application creation skipped for %s. Cross-service application create is not implemented.",
+            application_name,
+        )
         return None
         
         # try:

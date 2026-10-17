@@ -5,6 +5,7 @@ from app.modules.shared.api import (
     users,
 )
 from app.api.v1.endpoints.health import router as health_router
+from app.api.v1.endpoints.iam_admin import router as iam_admin_router
 
 # Create main API router
 api_router = APIRouter()
@@ -13,3 +14,4 @@ api_router = APIRouter()
 api_router.include_router(health_router, tags=["health"])
 api_router.include_router(auth.router, prefix="/auth", tags=["authentication"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
+api_router.include_router(iam_admin_router, tags=["tenant-iam"])

@@ -340,7 +340,8 @@ const TPRM = () => {
         setTPRMData(data);
       } catch (err) {
         console.error("Failed to fetch TPRM data:", err);
-        setError("Failed to load TPRM data. Please try again later.");
+        setTPRMData({ vendors: [], expiredVendors: [], delayedVendors: [] });
+        setError("TPRM service is unavailable. Showing an empty workspace.");
       } finally {
         setLoading(false);
       }
@@ -381,14 +382,7 @@ const TPRM = () => {
     );
   }
 
-  // Show error state
-  if (error) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error">{error}</Alert>
-      </Box>
-    );
-  }
+  // Keep the workspace visible even when the service is down.
 
   return (
     <Box
@@ -399,6 +393,11 @@ const TPRM = () => {
         boxSizing: "border-box",
       }}
     >
+      {error && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
       {/* Header */}
       <Box className="dashboard-header" sx={{ mb: 3 }}>
         <Typography

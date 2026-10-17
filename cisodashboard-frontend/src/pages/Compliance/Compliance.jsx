@@ -26,7 +26,6 @@ import assignmentApi from "../../utils/assignmentApi";
 import ControlDetailsTable from "./components/ControlDetailsTable";
 import AddVendorModal from "./components/AddVendorModal";
 import AddExpiryModal from "./components/AddExpiryModal";
-import { generateMockComplianceData } from "./mockData";
 import vendorApi from "../../utils/vendorApi";
 import auditApi from "../../utils/auditApi";
 import { useToast } from "../../components/common/useToast";
@@ -65,10 +64,14 @@ const Compliance = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      // In a real app, you would fetch this from an API
-      const data = generateMockComplianceData();
-      setComplianceData(data);
-      setLoading(false);
+      try {
+        const vendors = await vendorApi.getVendors();
+        setComplianceData({ vendors: vendors?.items || vendors || [], standards: [] });
+      } catch {
+        setComplianceData({ vendors: [], standards: [] });
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchData();

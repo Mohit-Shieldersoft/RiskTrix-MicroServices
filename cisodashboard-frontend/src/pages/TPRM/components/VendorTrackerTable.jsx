@@ -107,7 +107,7 @@ const VendorTrackerTable = ({ data }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {data
+            {(Array.isArray(data) ? data : [])
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((vendor) => (
                 <TableRow 
@@ -197,7 +197,7 @@ const VendorTrackerTable = ({ data }) => {
       
       <TablePagination
         component="div"
-        count={data.length}
+        count={(Array.isArray(data) ? data : []).length}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={handleChangePage}

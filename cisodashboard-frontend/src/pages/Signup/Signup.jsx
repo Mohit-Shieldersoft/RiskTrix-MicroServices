@@ -209,13 +209,14 @@ import {
 } from '@mui/material';
 import { useNavigate, Link } from 'react-router-dom';
 import Security from '@mui/icons-material/Security';
+import api from '../../utils/api';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     confirmPassword: '',
-    role: 4, // 👈 default Viewer / lowest role
+    role: 'VIEWER',
   });
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -254,27 +255,17 @@ const handleChange = e => {
     }
 
     try {
-      // simple client-side signup stored in localStorage
-      const users = JSON.parse(localStorage.getItem('mock_users') || '[]');
-      const exists = users.find(u => u.email === (email || '').toLowerCase());
-      if (exists) {
-        setError('Email already registered. Please login.');
-        return;
-      }
-      const newUser = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
-        email: (email || '').toLowerCase(),
+      await api.post("/api/v1/auth/register", {
+        email: (email || "").toLowerCase(),
+        username: (email || "").split("@")[0],
+        full_name: email,
         password,
-        role: Number(role) || 4,
-        created_at: new Date().toISOString()
-      };
-      users.push(newUser);
-      localStorage.setItem('mock_users', JSON.stringify(users));
-
-      setSuccessMsg('Signup successful. Redirecting to login...');
-      setTimeout(() => navigate('/login'), 1200);
+        role: role === "SECURITY_ANALYST" ? "SECURITY_ANALYST" : "VIEWER",
+      });
+      setSuccessMsg("Signup successful. Redirecting to login...");
+      setTimeout(() => navigate("/login"), 1200);
     } catch (err) {
-      setError(err?.message || 'Signup failed');
+      setError(err?.response?.data?.detail || err?.message || 'Signup failed');
     } finally {
       setLoading(false);
     }
@@ -380,12 +371,10 @@ const handleChange = e => {
               id="role"
               value={role}
               onChange={handleChange}
-              helperText="Choose account type"
+              helperText="New accounts cannot self-assign Admin. An admin can raise your role later."
             >
-              <MenuItem value={1}>Admin</MenuItem>
-              <MenuItem value={2}>Doctor</MenuItem>
-              <MenuItem value={3}>Patient</MenuItem>
-              <MenuItem value={4}>Viewer / Regular User</MenuItem>
+              <MenuItem value="VIEWER">Viewer</MenuItem>
+              <MenuItem value="SECURITY_ANALYST">Security Analyst</MenuItem>
             </TextField>
 
             <Button

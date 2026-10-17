@@ -12,9 +12,11 @@ import {
 import { useNavigate } from "react-router-dom";
 import Security from "@mui/icons-material/Security";
 import DeveloperModeIcon from "@mui/icons-material/DeveloperMode";
-import { setToken, setRefreshToken, setUserProfile } from "../../utils/auth";
+import { setToken, setRefreshToken, setUserProfile, DEMO_EMAIL } from "../../utils/auth";
+import { provisionDemoWorkspace } from "../../utils/demoWorkspace";
 import { enableDevMode } from "../../utils/devAuthBypass";
-import axios from "axios";
+import api from "../../utils/api";
+import dashboardTheme from "../../theme/dashboardTheme";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -37,10 +39,6 @@ const Login = () => {
     setError("");
 
     try {
-      const API_BASE_URL =
-        import.meta.env.VITE_APPLICATION_SERVICE_URL || "http://localhost:8001";
-      const API_PREFIX = "/api/v1";
-
       // Determine if input is email or username
       const isEmail = emailOrUsername.includes("@");
       const payload = {
@@ -50,10 +48,7 @@ const Login = () => {
           : { username: emailOrUsername }),
       };
 
-      const res = await axios.post(
-        `${API_BASE_URL}${API_PREFIX}/auth/login`,
-        payload,
-      );
+      const res = await api.post("/api/v1/auth/login", payload);
       const data = res.data;
 
       // Store tokens
@@ -67,10 +62,9 @@ const Login = () => {
       // Store user profile information
       if (data.user) {
         setUserProfile(data.user);
-        console.log("✅ Login successful - User profile:", data.user);
+        await provisionDemoWorkspace(data.user);
       }
 
-      // Redirect to dashboard
       navigate("/", { replace: true });
     } catch (err) {
       console.error("Login error:", err);
@@ -88,7 +82,7 @@ const Login = () => {
         minHeight: "100vh",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#f5f7fa",
+        backgroundColor: dashboardTheme.colors.background.main,
       }}
     >
       <Container maxWidth="sm">
@@ -152,6 +146,9 @@ const Login = () => {
               value={password}
               onChange={handleChange}
             />
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Demo workspace: {DEMO_EMAIL} / Demo@1234 — sample data stays on this account only.
+            </Typography>
             <Button
               type="submit"
               fullWidth
@@ -160,6 +157,9 @@ const Login = () => {
               disabled={loading}
             >
               {loading ? "Authenticating..." : "Sign In"}
+            </Button>
+            <Button fullWidth onClick={() => navigate("/forgot-password")}>
+              Forgot password?
             </Button>
 
             {/* Dev Mode Button - Only show in development */}

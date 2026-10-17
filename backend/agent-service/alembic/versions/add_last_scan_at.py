@@ -19,16 +19,29 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Upgrade schema."""
-    # Add missing columns to agents table
-    op.add_column('agents', sa.Column('os_version', sa.String(), nullable=True))
-    op.add_column('agents', sa.Column('kernel_version', sa.String(), nullable=True))
-    op.add_column('agents', sa.Column('last_scan_at', sa.DateTime(), nullable=True))
+    """Upgrade schema — idempotent: uses IF NOT EXISTS to avoid DuplicateColumnError
+    when the initial migration already included these columns."""
+    conn = op.get_bind()
+    conn.execute(sa.text(
+        "ALTER TABLE agents ADD COLUMN IF NOT EXISTS os_version VARCHAR"
+    ))
+    conn.execute(sa.text(
+        "ALTER TABLE agents ADD COLUMN IF NOT EXISTS kernel_version VARCHAR"
+    ))
+    conn.execute(sa.text(
+        "ALTER TABLE agents ADD COLUMN IF NOT EXISTS last_scan_at TIMESTAMP"
+    ))
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    # Remove added columns from agents table
-    op.drop_column('agents', 'last_scan_at')
-    op.drop_column('agents', 'kernel_version')
-    op.drop_column('agents', 'os_version')
+    conn = op.get_bind()
+    conn.execute(sa.text(
+        "ALTER TABLE agents DROP COLUMN IF EXISTS last_scan_at"
+    ))
+    conn.execute(sa.text(
+        "ALTER TABLE agents DROP COLUMN IF EXISTS kernel_version"
+    ))
+    conn.execute(sa.text(
+        "ALTER TABLE agents DROP COLUMN IF EXISTS os_version"
+    ))
